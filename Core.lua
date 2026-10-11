@@ -123,7 +123,7 @@ local function WriteMacro()
     if idx == 0 then
         local result = CreateMacro(name, icon, body, nil)
         if not result then
-            print("|cffC8A838SmartAssist|r: Could not create macro \"" .. name .. "\" — macro limit reached (max 18 general macros).")
+            print(ns.Theme.Code("accent") .. "SmartAssist|r: Could not create macro \"" .. name .. "\" — macro limit reached (max 18 general macros).")
         end
     else
         EditMacro(idx, name, icon, body)
@@ -186,7 +186,7 @@ end
 ns.FindTank = FindTank
 
 local function Notify(msg)
-    print("|cffC8A838SmartAssist|r: " .. msg)
+    print(ns.Theme.Code("accent") .. "SmartAssist|r: " .. msg)
 end
 
 local function ApplyAutoTank()

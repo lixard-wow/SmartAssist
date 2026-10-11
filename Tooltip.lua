@@ -2,50 +2,16 @@ local addonName, ns = ...
 
 local LDB    = LibStub("LibDataBroker-1.1")
 local DBIcon = LibStub("LibDBIcon-1.0")
+local Theme  = ns.Theme
 
-local C = {
-    bg         = { 0.06, 0.06, 0.06, 0.97 },
-    border     = { 0.22, 0.22, 0.22, 1.00 },
-    header     = { 0.09, 0.09, 0.09, 1.00 },
-    row        = { 0.08, 0.08, 0.08, 1.00 },
-    rowHover   = { 0.14, 0.14, 0.14, 1.00 },
-    clearRow   = { 0.11, 0.06, 0.06, 1.00 },
-    clearHover = { 0.19, 0.07, 0.07, 1.00 },
-    footer     = { 0.05, 0.05, 0.05, 1.00 },
-    divider    = { 0.18, 0.18, 0.18, 1.00 },
-    accentRed  = { 0.75, 0.25, 0.25, 1.00 },
-    textPri    = { 0.92, 0.91, 0.86, 1.00 },
-    textMuted  = { 0.62, 0.62, 0.62, 1.00 },
-    textDim    = { 0.38, 0.38, 0.38, 1.00 },
-    textRed    = { 0.85, 0.42, 0.42, 1.00 },
-    gold       = { 0.78, 0.66, 0.22, 1.00 },
-}
-
-local POPUP_W  = 214
-local HEADER_H = 38
-local ROW_H    = 26
-local FOOTER_H = 24
+local POPUP_W  = 224
+local HEADER_H = 42
+local ROW_H    = 24
+local FOOTER_H = 28
 local MAX_ROWS = 7
 local ACCENT_W = 3
-local PAD_LEFT = 14
-
-local function Bg(f, col, bord)
-    bord = bord or col
-    f:SetBackdrop({
-        bgFile   = "Interface\\Buttons\\WHITE8x8",
-        edgeFile = "Interface\\Buttons\\WHITE8x8",
-        edgeSize = 1,
-        insets   = { left = 1, right = 1, top = 1, bottom = 1 },
-    })
-    f:SetBackdropColor(col[1], col[2], col[3], col[4] or 1)
-    f:SetBackdropBorderColor(bord[1], bord[2], bord[3], bord[4] or 1)
-end
-
-local function Solid(parent, col, layer)
-    local t = parent:CreateTexture(nil, layer or "ARTWORK")
-    t:SetColorTexture(col[1], col[2], col[3], col[4] or 1)
-    return t
-end
+local INSET    = 8
+local GAP      = 6
 
 local function GetTargetLabel() return ns.GetTargetLabel() end
 
@@ -57,7 +23,7 @@ local function ScheduleHide()
     if isPrompt then return end
     hideCancelled = false
     C_Timer.After(0.18, function()
-        if not hideCancelled and popup then
+        if not hideCancelled and popup and not popup:IsMouseOver() then
             popup:Hide()
         end
     end)
@@ -67,30 +33,58 @@ local function CancelHide()
     hideCancelled = true
 end
 
+local function PaintRow(r)
+    local C = Theme.C
+    local action = r.action
+    if not action then return end
+    local lit = r.btn:IsMouseOver()
+    local fillKey = action.isClear and "dangerFill" or "hover"
+    Theme.Tint(r.fill, C[fillKey], (lit or action.isClear) and 1 or 0)
+    local accent = C[action.accentKey or "accent"]
+    r.accent:SetColorTexture(accent[1], accent[2], accent[3], 1)
+    r.accent:SetShown(lit)
+    if action.isClear then
+        Theme.SetColor(r.lbl, "danger")
+    else
+        Theme.SetColor(r.lbl, lit and "text" or "muted")
+    end
+    r.arrow:SetText(lit and Theme.Code(action.accentKey or "accent") .. ">|r" or "")
+end
+
 local function MakeRow(parent)
-    local row = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-    row:SetHeight(ROW_H)
-    Bg(row, C.row, C.row)
-    row:Hide()
+    local r = {}
+    r.btn = CreateFrame("Button", nil, parent)
+    r.btn:SetHeight(ROW_H)
+    r.btn:Hide()
+    r.fill = Theme.Box(r.btn, "hover", "hover", "buttonRadius")
+    r.btn.edge:Hide()
 
-    local bar = Solid(row, C.gold, "OVERLAY")
-    bar:SetWidth(ACCENT_W)
-    bar:SetPoint("TOPLEFT",    row, "TOPLEFT",    1, 0)
-    bar:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 1, 0)
-    bar:Hide()
+    r.accent = r.btn:CreateTexture(nil, "ARTWORK")
+    r.accent:SetWidth(ACCENT_W)
+    r.accent:SetPoint("TOPLEFT",    r.btn, "TOPLEFT",    0, -3)
+    r.accent:SetPoint("BOTTOMLEFT", r.btn, "BOTTOMLEFT", 0, 3)
+    r.accent:Hide()
 
-    local lbl = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    lbl:SetPoint("LEFT", row, "LEFT", PAD_LEFT, 0)
-    lbl:SetTextColor(C.textMuted[1], C.textMuted[2], C.textMuted[3], 1)
+    r.lbl = Theme.Text(r.btn, "body", 12, "muted")
+    r.lbl:SetPoint("LEFT", r.btn, "LEFT", 10, 0)
 
-    local arr = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    arr:SetPoint("RIGHT", row, "RIGHT", -10, 0)
-    arr:SetText("|cff333333>|r")
+    r.arrow = Theme.Text(r.btn, "strong", 12, "accent")
+    r.arrow:SetPoint("RIGHT", r.btn, "RIGHT", -8, 0)
 
-    local btn = CreateFrame("Button", nil, row)
-    btn:SetAllPoints()
+    r.btn:SetScript("OnEnter", function()
+        CancelHide()
+        PaintRow(r)
+    end)
+    r.btn:SetScript("OnLeave", function()
+        PaintRow(r)
+        ScheduleHide()
+    end)
+    r.btn:SetScript("OnClick", function()
+        if r.action then r.action.fn() end
+    end)
 
-    return { frame = row, bar = bar, lbl = lbl, arr = arr, btn = btn }
+    Theme.Skin(function() PaintRow(r) end)
+    return r
 end
 
 local rows = {}
@@ -98,105 +92,98 @@ local statusLbl
 local headerIcon
 
 local function BuildPopup()
-    local f = CreateFrame("Frame", "SmartAssistPopup", UIParent, "BackdropTemplate")
+    local f = CreateFrame("Frame", "SmartAssistPopup", UIParent)
     f:SetWidth(POPUP_W)
     f:SetFrameStrata("TOOLTIP")
     f:SetClampedToScreen(true)
-    Bg(f, C.bg, C.border)
+    f:EnableMouse(true)
     f:Hide()
     f:SetScript("OnEnter", CancelHide)
     f:SetScript("OnLeave", ScheduleHide)
+    f:SetScript("OnHide", function() isPrompt = false end)
+    Theme.Window(f, HEADER_H)
 
-    local hdr = CreateFrame("Frame", nil, f, "BackdropTemplate")
-    hdr:SetHeight(HEADER_H)
-    hdr:SetPoint("TOPLEFT",  f, "TOPLEFT",  1, -1)
-    hdr:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -1)
-    Bg(hdr, C.header, C.header)
-
-    local hdrLine = Solid(hdr, C.gold, "OVERLAY")
-    hdrLine:SetHeight(1)
-    hdrLine:SetPoint("BOTTOMLEFT",  hdr, "BOTTOMLEFT",  0, 0)
-    hdrLine:SetPoint("BOTTOMRIGHT", hdr, "BOTTOMRIGHT", 0, 0)
-
-    local ico = hdr:CreateTexture(nil, "ARTWORK")
-    ico:SetSize(20, 20)
-    ico:SetPoint("LEFT", hdr, "LEFT", 10, 0)
+    local ico = f:CreateTexture(nil, "ARTWORK")
+    ico:SetSize(22, 22)
+    ico:SetPoint("LEFT", f, "TOPLEFT", 12, -HEADER_H / 2)
     ico:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     headerIcon = ico
 
-    local title = hdr:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("LEFT", ico, "RIGHT", 8, 1)
-    title:SetTextColor(C.gold[1], C.gold[2], C.gold[3], 1)
-    title:SetText("SmartAssist")
+    local title = Theme.Text(f, "title", nil, "title")
+    title:SetPoint("BOTTOMLEFT", ico, "RIGHT", 8, 0)
+    Theme.SetTitle(title, "SmartAssist")
 
-    local sub = hdr:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    sub:SetPoint("LEFT", ico, "RIGHT", 8, -10)
-    sub:SetTextColor(C.textDim[1], C.textDim[2], C.textDim[3], 1)
-    sub:SetText(ns.GetSpellName and ns.GetSpellName() or "")
+    local sub = Theme.Text(f, "body", 11, "muted")
+    sub:SetPoint("TOPLEFT", ico, "RIGHT", 8, -1)
     f.subLbl = sub
 
-    local closeBtn = CreateFrame("Button", nil, hdr)
-    closeBtn:SetSize(20, 20)
-    closeBtn:SetPoint("RIGHT", hdr, "RIGHT", -6, 0)
-    local closeTxt = closeBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    closeTxt:SetAllPoints()
-    closeTxt:SetJustifyH("CENTER")
-    closeTxt:SetTextColor(C.gold[1], C.gold[2], C.gold[3], 1)
-    closeTxt:SetText("X")
-    closeBtn:SetScript("OnClick", function() f:Hide() end)
-    closeBtn:SetScript("OnEnter", function()
-        CancelHide()
-        closeTxt:SetTextColor(1, 1, 1, 1)
-    end)
-    closeBtn:SetScript("OnLeave", function()
-        ScheduleHide()
-        closeTxt:SetTextColor(C.gold[1], C.gold[2], C.gold[3], 1)
-    end)
+    local btnSize = HEADER_H - 18
+    local closeBtn = Theme.IconButton(f, "icon_close", btnSize, function() f:Hide() end, "Close")
+    closeBtn:SetPoint("RIGHT", f, "TOPRIGHT", -10, -HEADER_H / 2)
+    closeBtn:HookScript("OnEnter", CancelHide)
+    closeBtn:HookScript("OnLeave", ScheduleHide)
+
+    local themeBtn = Theme.IconButton(f, "icon_sliders", btnSize, function() Theme.Next() end,
+        function() return "Theme: " .. Theme.T.name .. "\nClick for the next theme" end)
+    themeBtn:SetPoint("RIGHT", closeBtn, "LEFT", -4, 0)
+    themeBtn:HookScript("OnEnter", CancelHide)
+    themeBtn:HookScript("OnLeave", ScheduleHide)
 
     for i = 1, MAX_ROWS do
         rows[i] = MakeRow(f)
     end
 
-    local warnRow = CreateFrame("Frame", nil, f, "BackdropTemplate")
+    local warnRow = CreateFrame("Frame", nil, f)
     warnRow:SetHeight(ROW_H)
-    warnRow:SetPoint("TOPLEFT",  f, "TOPLEFT",  1, 0)
-    warnRow:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, 0)
-    Bg(warnRow, { 0.14, 0.09, 0.02, 1 }, { 0.14, 0.09, 0.02, 1 })
-    local warnTxt = warnRow:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    warnTxt:SetPoint("LEFT", warnRow, "LEFT", PAD_LEFT, 0)
-    warnTxt:SetTextColor(1.0, 0.65, 0.10, 1)
+    warnRow:SetPoint("TOPLEFT",  f, "TOPLEFT",  INSET, -(HEADER_H + GAP))
+    warnRow:SetPoint("TOPRIGHT", f, "TOPRIGHT", -INSET, -(HEADER_H + GAP))
+    Theme.Box(warnRow, "warnFill", "warnFill", "buttonRadius")
+    local warnTxt = Theme.Text(warnRow, "strong", 12, "warn")
+    warnTxt:SetPoint("LEFT", warnRow, "LEFT", 10, 0)
     warnRow:Hide()
     f.warnRow = warnRow
     f.warnTxt = warnTxt
 
-    f.clearSep = Solid(f, C.divider, "ARTWORK")
+    f.clearSep = f:CreateTexture(nil, "ARTWORK")
     f.clearSep:SetHeight(1)
     f.clearSep:Hide()
+    Theme.Skin(function(_, C) f.clearSep:SetColorTexture(C.line[1], C.line[2], C.line[3], 1) end)
+
+    local footDiv = f:CreateTexture(nil, "ARTWORK")
+    footDiv:SetHeight(1)
+    footDiv:SetPoint("BOTTOMLEFT",  f, "BOTTOMLEFT",  INSET, FOOTER_H)
+    footDiv:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -INSET, FOOTER_H)
+    Theme.Skin(function(_, C) footDiv:SetColorTexture(C.line[1], C.line[2], C.line[3], 1) end)
+    f.footerDiv = footDiv
+
+    local statusPfx = Theme.Text(f, "heading", nil, "muted")
+    statusPfx:SetPoint("LEFT", f, "BOTTOMLEFT", INSET + 4, FOOTER_H / 2)
+    statusPfx:SetText("Target:")
+    f.statusPfx = statusPfx
+
+    statusLbl = Theme.Text(f, "strong", 12, "accent")
+    statusLbl:SetPoint("LEFT", statusPfx, "RIGHT", 5, 0)
 
     tinsert(UISpecialFrames, "SmartAssistPopup")
-
-    f.footerDiv = Solid(f, C.divider, "ARTWORK")
-    f.footerDiv:SetHeight(1)
-    f.footerDiv:SetPoint("BOTTOMLEFT",  f, "BOTTOMLEFT",  1, FOOTER_H + 1)
-    f.footerDiv:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, FOOTER_H + 1)
-
-    local ftr = CreateFrame("Frame", nil, f, "BackdropTemplate")
-    f.footer = ftr
-    ftr:SetHeight(FOOTER_H)
-    ftr:SetPoint("BOTTOMLEFT",  f, "BOTTOMLEFT",  1, 1)
-    ftr:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -1, 1)
-    Bg(ftr, C.footer, C.footer)
-
-    local statusPfx = ftr:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    statusPfx:SetPoint("LEFT", ftr, "LEFT", PAD_LEFT, 0)
-    statusPfx:SetTextColor(C.textDim[1], C.textDim[2], C.textDim[3], 1)
-    statusPfx:SetText("Target:")
-
-    statusLbl = ftr:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    statusLbl:SetPoint("LEFT", statusPfx, "RIGHT", 5, 0)
-    statusLbl:SetTextColor(C.gold[1], C.gold[2], C.gold[3], 1)
-
     return f
+end
+
+local function Anchor(anchorFrame)
+    popup:ClearAllPoints()
+    if anchorFrame then
+        local x = anchorFrame:GetCenter()
+        if x and x > (GetScreenWidth() / 2) then
+            popup:SetPoint("RIGHT", anchorFrame, "LEFT", -6, 0)
+        else
+            popup:SetPoint("LEFT", anchorFrame, "RIGHT", 6, 0)
+        end
+    else
+        popup:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    end
+end
+
+local function Notify(msg)
+    print(Theme.Code("accent") .. "SmartAssist|r: " .. msg)
 end
 
 local function ShowPopup(anchorFrame)
@@ -216,15 +203,14 @@ local function ShowPopup(anchorFrame)
     if inGroup and ns.class ~= "PRIEST" then
         local lbl = IsInRaid() and "Set to Raid Tank" or "Set to Party Tank"
         table.insert(actions, {
-            label     = lbl,
-            accentCol = C.gold,
-            fn        = function()
+            label = lbl,
+            fn    = function()
                 local tank = ns.FindTank and ns.FindTank()
                 if tank then
                     ns.SetTarget(tank)
-                    print("|cffC8A838SmartAssist|r: Target set to " .. tank)
+                    Notify("Target set to " .. tank)
                 else
-                    print("|cffC8A838SmartAssist|r: No tank found in group")
+                    Notify("No tank found in group")
                 end
             end,
         })
@@ -232,15 +218,14 @@ local function ShowPopup(anchorFrame)
 
     if ns.class == "PRIEST" then
         table.insert(actions, {
-            label     = "Save Target's Name",
-            accentCol = C.gold,
-            fn        = function()
+            label = "Save Target's Name",
+            fn    = function()
                 local name = UnitIsPlayer("target") and GetUnitName("target", true)
                 if name and not (issecretvalue and issecretvalue(name)) then
                     ns.SetTarget(name)
-                    print("|cffC8A838SmartAssist|r: Target set to " .. name)
+                    Notify("Target set to " .. name)
                 else
-                    print("|cffC8A838SmartAssist|r: Target a player first")
+                    Notify("Target a player first")
                 end
             end,
         })
@@ -257,38 +242,25 @@ local function ShowPopup(anchorFrame)
     table.insert(actions, {
         label     = "Clear Target",
         isClear   = true,
-        accentCol = C.accentRed,
+        accentKey = "danger",
         fn        = function() ns.ClearTarget() end,
     })
 
     local spellAvail = ns.IsSpellAvailable and ns.IsSpellAvailable()
 
     if not spellAvail then
-        popup.warnRow:ClearAllPoints()
-        popup.warnRow:SetPoint("TOPLEFT",  popup, "TOPLEFT",  1, -(1 + HEADER_H + 1 + 1))
-        popup.warnRow:SetPoint("TOPRIGHT", popup, "TOPRIGHT", -1, -(1 + HEADER_H + 1 + 1))
         popup.warnTxt:SetText("Not talented into " .. (ns.GetSpellName and ns.GetSpellName() or "spell"))
         popup.warnRow:Show()
-
-        for i = 1, MAX_ROWS do rows[i].frame:Hide() end
+        for i = 1, MAX_ROWS do
+            rows[i].action = nil
+            rows[i].btn:Hide()
+        end
         popup.clearSep:Hide()
         popup.footerDiv:Hide()
-        if popup.footer then popup.footer:Hide() end
-
-        popup:SetHeight(1 + HEADER_H + 1 + 1 + ROW_H + 4)
-
-        popup:ClearAllPoints()
-        if anchorFrame then
-            local x = anchorFrame:GetCenter()
-            if x and x > (GetScreenWidth() / 2) then
-                popup:SetPoint("RIGHT", anchorFrame, "LEFT", -6, 0)
-            else
-                popup:SetPoint("LEFT", anchorFrame, "RIGHT", 6, 0)
-            end
-        else
-            popup:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-        end
-
+        popup.statusPfx:Hide()
+        statusLbl:Hide()
+        popup:SetHeight(HEADER_H + GAP + ROW_H + GAP + 2)
+        Anchor(anchorFrame)
         popup:Show()
         ns.tooltip = popup
         return
@@ -296,95 +268,43 @@ local function ShowPopup(anchorFrame)
 
     popup.warnRow:Hide()
     popup.footerDiv:Show()
-    if popup.footer then popup.footer:Show() end
+    popup.statusPfx:Show()
+    statusLbl:Show()
+    popup.clearSep:Hide()
 
-    local nRows  = #actions
-    local totalH = 1 + HEADER_H + 1 + 1 + (nRows * ROW_H) + 1 + FOOTER_H + 1
-    popup:SetHeight(totalH)
-
-    local rowY = -(1 + HEADER_H + 1 + 1)
+    local rowY = -(HEADER_H + GAP)
 
     for i = 1, MAX_ROWS do
-        local row    = rows[i]
+        local r      = rows[i]
         local action = actions[i]
+        r.action = action
 
         if action then
-            local isClear   = action.isClear
-            local bgNorm    = isClear and C.clearRow   or C.row
-            local bgHov     = isClear and C.clearHover or C.rowHover
-            local lblCol    = isClear and C.textRed    or C.textMuted
-            local lblHovCol = isClear and { 1, 0.5, 0.5, 1 } or C.textPri
-            local accentCol = action.accentCol or C.gold
-
-            if i > 1 and isClear then
+            if i > 1 and action.isClear then
+                rowY = rowY - GAP / 2
                 popup.clearSep:ClearAllPoints()
-                popup.clearSep:SetPoint("TOPLEFT",  popup, "TOPLEFT",  1, rowY)
-                popup.clearSep:SetPoint("TOPRIGHT", popup, "TOPRIGHT", -1, rowY)
+                popup.clearSep:SetPoint("TOPLEFT",  popup, "TOPLEFT",  INSET, rowY)
+                popup.clearSep:SetPoint("TOPRIGHT", popup, "TOPRIGHT", -INSET, rowY)
                 popup.clearSep:Show()
-                rowY   = rowY - 1
-                totalH = totalH + 1
-                popup:SetHeight(totalH)
+                rowY = rowY - 1 - GAP / 2
             end
 
-            row.frame:ClearAllPoints()
-            row.frame:SetPoint("TOPLEFT",  popup, "TOPLEFT",  1, rowY)
-            row.frame:SetPoint("TOPRIGHT", popup, "TOPRIGHT", -1, rowY)
-            row.frame:SetBackdropColor(bgNorm[1], bgNorm[2], bgNorm[3], 1)
-            row.frame:SetBackdropBorderColor(bgNorm[1], bgNorm[2], bgNorm[3], 1)
-
-            row.bar:SetColorTexture(accentCol[1], accentCol[2], accentCol[3], 1)
-            row.bar:Hide()
-
-            row.lbl:SetText(action.label)
-            row.lbl:SetTextColor(lblCol[1], lblCol[2], lblCol[3], 1)
-
-            row.arr:SetText("|cff2a2a2a>|r")
-
-            row.btn:SetScript("OnClick", action.fn)
-            row.btn:SetScript("OnEnter", function()
-                CancelHide()
-                row.frame:SetBackdropColor(bgHov[1], bgHov[2], bgHov[3], 1)
-                row.frame:SetBackdropBorderColor(bgHov[1], bgHov[2], bgHov[3], 1)
-                row.lbl:SetTextColor(lblHovCol[1], lblHovCol[2], lblHovCol[3], 1)
-                row.arr:SetText("|cff" ..
-                    string.format("%02x%02x%02x",
-                        accentCol[1] * 255,
-                        accentCol[2] * 255,
-                        accentCol[3] * 255) .. ">|r")
-                row.bar:Show()
-            end)
-            row.btn:SetScript("OnLeave", function()
-                ScheduleHide()
-                row.frame:SetBackdropColor(bgNorm[1], bgNorm[2], bgNorm[3], 1)
-                row.frame:SetBackdropBorderColor(bgNorm[1], bgNorm[2], bgNorm[3], 1)
-                row.lbl:SetTextColor(lblCol[1], lblCol[2], lblCol[3], 1)
-                row.arr:SetText("|cff2a2a2a>|r")
-                row.bar:Hide()
-            end)
-
-            row.frame:Show()
+            r.btn:ClearAllPoints()
+            r.btn:SetPoint("TOPLEFT",  popup, "TOPLEFT",  INSET, rowY)
+            r.btn:SetPoint("TOPRIGHT", popup, "TOPRIGHT", -INSET, rowY)
+            r.lbl:SetText(action.label)
+            r.btn:Show()
+            PaintRow(r)
             rowY = rowY - ROW_H
         else
-            row.frame:Hide()
+            r.btn:Hide()
         end
     end
 
-    if statusLbl then
-        statusLbl:SetText(GetTargetLabel())
-    end
+    popup:SetHeight(-rowY + GAP + 1 + FOOTER_H)
+    statusLbl:SetText(GetTargetLabel())
 
-    popup:ClearAllPoints()
-    if anchorFrame then
-        local x = anchorFrame:GetCenter()
-        if x and x > (GetScreenWidth() / 2) then
-            popup:SetPoint("RIGHT", anchorFrame, "LEFT", -6, 0)
-        else
-            popup:SetPoint("LEFT", anchorFrame, "RIGHT", 6, 0)
-        end
-    else
-        popup:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-    end
-
+    Anchor(anchorFrame)
     popup:Show()
     ns.tooltip = popup
 end
@@ -404,6 +324,8 @@ function ns.ShowTargetPrompt()
 end
 
 function ns.InitTooltip()
+    Theme.Load()
+
     local iconPath = ({
         ROGUE  = "Interface\\Icons\\Ability_Rogue_TricksOftheTrade",
         HUNTER = "Interface\\Icons\\Ability_Hunter_Misdirection",

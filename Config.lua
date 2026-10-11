@@ -1,166 +1,142 @@
 local addonName, ns = ...
 
-local C = {
-    bg         = { 0.06, 0.06, 0.06, 0.98 },
-    titleBar   = { 0.08, 0.08, 0.08, 1.00 },
-    border     = { 0.22, 0.22, 0.22, 1.00 },
-    divider    = { 0.28, 0.28, 0.28, 1.00 },
-    gold       = { 0.78, 0.66, 0.22, 1.00 },
-    textPri    = { 0.92, 0.91, 0.86, 1.00 },
-    textMuted  = { 0.70, 0.70, 0.70, 1.00 },
-    fieldBg    = { 0.10, 0.10, 0.10, 1.00 },
-    fieldBord  = { 0.30, 0.30, 0.30, 1.00 },
-    closeNorm  = { 0.15, 0.15, 0.15, 1.00 },
-    closeHover = { 0.50, 0.10, 0.10, 1.00 },
-    closeBord  = { 0.30, 0.30, 0.30, 1.00 },
-    closeHBord = { 0.80, 0.20, 0.20, 1.00 },
-}
-
-local function UC(c) return c[1], c[2], c[3], c[4] or 1 end
-
-local function ApplyBackdrop(frame, bg, bord)
-    frame:SetBackdrop({
-        bgFile   = "Interface\\Buttons\\WHITE8x8",
-        edgeFile = "Interface\\Buttons\\WHITE8x8",
-        edgeSize = 1,
-        insets   = { left = 1, right = 1, top = 1, bottom = 1 },
-    })
-    frame:SetBackdropColor(bg[1], bg[2], bg[3], bg[4] or 1)
-    frame:SetBackdropBorderColor(bord[1], bord[2], bord[3], bord[4] or 1)
-end
-
-local function AddSection(parent, text, yOff)
-    local lbl = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    lbl:SetPoint("TOPLEFT", parent, "TOPLEFT", 12, yOff)
-    lbl:SetTextColor(UC(C.gold))
-    lbl:SetText(text)
-
-    local line = parent:CreateTexture(nil, "ARTWORK")
-    line:SetHeight(1)
-    line:SetPoint("TOPLEFT",  parent, "TOPLEFT",  12, yOff - 16)
-    line:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -12, yOff - 16)
-    line:SetColorTexture(C.divider[1], C.divider[2], C.divider[3], 1)
-end
-
-local function CreateToggle(parent, labelText, getter, setter)
-    local row = CreateFrame("Frame", nil, parent)
-    row:SetHeight(20)
-
-    local box = CreateFrame("Frame", nil, row, "BackdropTemplate")
-    box:SetSize(14, 14)
-    box:SetPoint("LEFT", row, "LEFT", 0, 0)
-    ApplyBackdrop(box, C.fieldBg, C.fieldBord)
-
-    local fill = box:CreateTexture(nil, "OVERLAY")
-    fill:SetPoint("TOPLEFT",     box, "TOPLEFT",     2, -2)
-    fill:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -2,  2)
-    fill:SetColorTexture(UC(C.gold))
-    fill:SetShown(getter())
-
-    local lbl = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    lbl:SetPoint("LEFT", box, "RIGHT", 8, 0)
-    lbl:SetText(labelText)
-    lbl:SetTextColor(C.textMuted[1], C.textMuted[2], C.textMuted[3], 1)
-
-    local btn = CreateFrame("Button", nil, row)
-    btn:SetAllPoints(row)
-    btn:RegisterForClicks("LeftButtonUp")
-    btn:SetScript("OnClick", function()
-        local v = not getter()
-        setter(v)
-        fill:SetShown(v)
-    end)
-    btn:SetScript("OnEnter", function()
-        lbl:SetTextColor(C.textPri[1], C.textPri[2], C.textPri[3], 1)
-    end)
-    btn:SetScript("OnLeave", function()
-        lbl:SetTextColor(C.textMuted[1], C.textMuted[2], C.textMuted[3], 1)
-    end)
-
-    row.Refresh = function() fill:SetShown(getter()) end
-
-    return row
-end
+local Theme = ns.Theme
 
 local configFrame
 local macroNameBox
 local targetDisplay
 local toggles = {}
 
-local FRAME_W = 360
-local FRAME_H = 306
-local PAD     = 12
+local FRAME_W  = 360
+local HEADER_H = 42
+local PAD      = 14
+local CHECK_W  = 16
+local ROW_H    = 24
+local FIELD_H  = 26
+
+local function AddSection(parent, text, y)
+    local lbl = Theme.Text(parent, "heading", nil, "heading")
+    lbl:SetPoint("TOPLEFT", parent, "TOPLEFT", PAD, y)
+    lbl:SetText(text)
+
+    local line = parent:CreateTexture(nil, "ARTWORK")
+    line:SetHeight(1)
+    line:SetPoint("TOPLEFT",  parent, "TOPLEFT",  PAD, y - 18)
+    line:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PAD, y - 18)
+    Theme.Skin(function(_, C) line:SetColorTexture(C.line[1], C.line[2], C.line[3], 1) end)
+end
+
+local function CreateToggle(parent, labelText, getter, setter)
+    local row = CreateFrame("Button", nil, parent)
+    row:SetHeight(ROW_H)
+
+    local cb = Theme.Check(row, CHECK_W, function(self) setter(self:GetChecked()) end)
+    cb:SetPoint("LEFT", row, "LEFT", 2, 0)
+    cb:SetChecked(getter())
+
+    local lbl = Theme.Text(row, "body", 12, "muted")
+    lbl:SetPoint("LEFT", cb, "RIGHT", 8, 0)
+    lbl:SetText(labelText)
+
+    row:SetScript("OnClick", function() cb:Click() end)
+    row:SetScript("OnEnter", function() Theme.SetColor(lbl, "text") end)
+    row:SetScript("OnLeave", function() Theme.SetColor(lbl, "muted") end)
+    cb:HookScript("OnEnter", function() Theme.SetColor(lbl, "text") end)
+    cb:HookScript("OnLeave", function() Theme.SetColor(lbl, "muted") end)
+
+    row.Refresh = function() cb:SetChecked(getter()) end
+    return row
+end
+
+local function TextButton(parent, text, width, onClick)
+    local b = CreateFrame("Button", nil, parent)
+    b:SetSize(width, FIELD_H)
+    local fill, edge = Theme.Box(b, "button", "buttonBorder", "buttonRadius")
+    local lbl = Theme.Text(b, "button", 12, "buttonText")
+    lbl:SetPoint("CENTER")
+    lbl:SetJustifyH("CENTER")
+    lbl:SetText(text)
+    b:SetScript("OnClick", onClick)
+    b:SetScript("OnEnter", function()
+        Theme.Tint(fill, Theme.C.buttonHover)
+        Theme.Tint(edge, Theme.C.accent)
+    end)
+    b:SetScript("OnLeave", function()
+        Theme.Tint(fill, Theme.C.button)
+        Theme.Tint(edge, Theme.C.buttonBorder)
+    end)
+    return b
+end
 
 local function BuildConfigFrame()
-    local f = CreateFrame("Frame", "SmartAssistConfigFrame", UIParent, "BackdropTemplate")
-    f:SetSize(FRAME_W, FRAME_H)
+    local f = CreateFrame("Frame", "SmartAssistConfigFrame", UIParent)
+    f:SetWidth(FRAME_W)
     f:SetPoint("CENTER")
     f:SetFrameStrata("DIALOG")
     f:SetMovable(true)
+    f:EnableMouse(true)
     f:SetClampedToScreen(true)
-    ApplyBackdrop(f, C.bg, C.border)
     f:Hide()
+    Theme.Window(f, HEADER_H)
+    tinsert(UISpecialFrames, "SmartAssistConfigFrame")
 
-    local titleBar = CreateFrame("Frame", nil, f, "BackdropTemplate")
-    titleBar:SetHeight(32)
-    titleBar:SetPoint("TOPLEFT",  f, "TOPLEFT",  0, 0)
-    titleBar:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
-    ApplyBackdrop(titleBar, C.titleBar, C.border)
-    titleBar:SetScript("OnMouseDown", function() f:StartMoving()        end)
-    titleBar:SetScript("OnMouseUp",   function() f:StopMovingOrSizing() end)
+    local drag = CreateFrame("Frame", nil, f)
+    drag:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
+    drag:SetPoint("TOPRIGHT", f, "TOPRIGHT", -70, 0)
+    drag:SetHeight(HEADER_H)
+    drag:EnableMouse(true)
+    drag:SetScript("OnMouseDown", function() f:StartMoving() end)
+    drag:SetScript("OnMouseUp",   function() f:StopMovingOrSizing() end)
 
-    local titleTxt = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    titleTxt:SetPoint("LEFT", titleBar, "LEFT", PAD, 0)
-    titleTxt:SetText("SmartAssist")
-    titleTxt:SetTextColor(UC(C.gold))
+    local ico = f:CreateTexture(nil, "ARTWORK")
+    ico:SetSize(22, 22)
+    ico:SetPoint("LEFT", f, "TOPLEFT", 12, -HEADER_H / 2)
+    ico:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    ico:SetTexture(ns.GetSpellIconID and ns.GetSpellIconID())
+    f.icon = ico
 
-    local closeBox = CreateFrame("Frame", nil, titleBar, "BackdropTemplate")
-    closeBox:SetSize(24, 24)
-    closeBox:SetPoint("RIGHT", titleBar, "RIGHT", -6, 0)
-    ApplyBackdrop(closeBox, C.closeNorm, C.closeBord)
+    local title = Theme.Text(f, "title", nil, "title")
+    title:SetPoint("BOTTOMLEFT", ico, "RIGHT", 8, 0)
+    Theme.SetTitle(title, "SmartAssist")
 
-    local closeX = closeBox:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    closeX:SetAllPoints()
-    closeX:SetText("X")
-    closeX:SetTextColor(C.textMuted[1], C.textMuted[2], C.textMuted[3], 1)
+    local sub = Theme.Text(f, "body", 11, "muted")
+    sub:SetPoint("TOPLEFT", ico, "RIGHT", 8, -1)
+    sub:SetText(ns.GetSpellName and ns.GetSpellName() or "")
+    f.subLbl = sub
 
-    local closeBtn = CreateFrame("Button", nil, closeBox)
-    closeBtn:SetAllPoints()
-    closeBtn:SetScript("OnClick", function() f:Hide() end)
-    closeBtn:SetScript("OnEnter", function()
-        closeBox:SetBackdropColor(C.closeHover[1], C.closeHover[2], C.closeHover[3], 1)
-        closeBox:SetBackdropBorderColor(C.closeHBord[1], C.closeHBord[2], C.closeHBord[3], 1)
-        closeX:SetTextColor(1, 1, 1, 1)
-    end)
-    closeBtn:SetScript("OnLeave", function()
-        closeBox:SetBackdropColor(C.closeNorm[1], C.closeNorm[2], C.closeNorm[3], 1)
-        closeBox:SetBackdropBorderColor(C.closeBord[1], C.closeBord[2], C.closeBord[3], 1)
-        closeX:SetTextColor(C.textMuted[1], C.textMuted[2], C.textMuted[3], 1)
-    end)
+    local btnSize = HEADER_H - 18
+    local closeBtn = Theme.IconButton(f, "icon_close", btnSize, function() f:Hide() end, "Close")
+    closeBtn:SetPoint("RIGHT", f, "TOPRIGHT", -10, -HEADER_H / 2)
 
-    local y = -48
+    local themeBtn = Theme.IconButton(f, "icon_sliders", btnSize, function() Theme.Next() end,
+        function() return "Theme: " .. Theme.T.name .. "\nClick for the next theme" end)
+    themeBtn:SetPoint("RIGHT", closeBtn, "LEFT", -4, 0)
+
+    local y = -(HEADER_H + 14)
 
     AddSection(f, "MACRO", y)
-    y = y - 26
+    y = y - 32
 
-    local nameLbl = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    nameLbl:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
+    local nameLbl = Theme.Text(f, "body", 12, "muted")
+    nameLbl:SetPoint("LEFT", f, "TOPLEFT", PAD, y - FIELD_H / 2)
     nameLbl:SetText("Name:")
-    nameLbl:SetTextColor(C.textMuted[1], C.textMuted[2], C.textMuted[3], 1)
 
-    local inputBg = CreateFrame("Frame", nil, f, "BackdropTemplate")
-    inputBg:SetSize(150, 24)
+    local inputBg = CreateFrame("Frame", nil, f)
+    inputBg:SetSize(170, FIELD_H)
     inputBg:SetPoint("LEFT", nameLbl, "RIGHT", 8, 0)
-    ApplyBackdrop(inputBg, C.fieldBg, C.fieldBord)
+    local _, inputEdge = Theme.Box(inputBg, "field", "border", "buttonRadius")
 
     macroNameBox = CreateFrame("EditBox", nil, inputBg)
-    macroNameBox:SetSize(142, 20)
-    macroNameBox:SetPoint("CENTER", inputBg, "CENTER", 0, 0)
+    macroNameBox:SetPoint("TOPLEFT", inputBg, "TOPLEFT", 4, -2)
+    macroNameBox:SetPoint("BOTTOMRIGHT", inputBg, "BOTTOMRIGHT", -4, 2)
     macroNameBox:SetAutoFocus(false)
     macroNameBox:SetMaxLetters(32)
-    macroNameBox:SetFontObject(GameFontHighlightSmall)
-    macroNameBox:SetTextColor(C.textPri[1], C.textPri[2], C.textPri[3], 1)
     macroNameBox:SetTextInsets(4, 4, 0, 0)
+    Theme.Skin(function(T, C)
+        Theme.SetFont(macroNameBox, T.fonts.body, 12)
+        macroNameBox:SetTextColor(C.text[1], C.text[2], C.text[3], 1)
+        Theme.Tint(inputEdge, macroNameBox:HasFocus() and C.accent or C.border)
+    end)
 
     local function ApplyMacroName()
         if InCombatLockdown() then
@@ -187,51 +163,24 @@ local function BuildConfigFrame()
         self:ClearFocus()
     end)
     macroNameBox:SetScript("OnEnterPressed", ApplyMacroName)
-    macroNameBox:SetScript("OnEditFocusGained", function()
-        inputBg:SetBackdropBorderColor(UC(C.gold))
-    end)
-    macroNameBox:SetScript("OnEditFocusLost", function()
-        inputBg:SetBackdropBorderColor(C.fieldBord[1], C.fieldBord[2], C.fieldBord[3], 1)
-    end)
+    macroNameBox:SetScript("OnEditFocusGained", function() Theme.Tint(inputEdge, Theme.C.accent) end)
+    macroNameBox:SetScript("OnEditFocusLost", function() Theme.Tint(inputEdge, Theme.C.border) end)
 
-    local applyBox = CreateFrame("Frame", nil, f, "BackdropTemplate")
-    applyBox:SetSize(46, 24)
-    applyBox:SetPoint("LEFT", inputBg, "RIGHT", 6, 0)
-    ApplyBackdrop(applyBox, C.fieldBg, C.fieldBord)
+    local applyBtn = TextButton(f, "Apply", 60, ApplyMacroName)
+    applyBtn:SetPoint("LEFT", inputBg, "RIGHT", 6, 0)
 
-    local applyTxt = applyBox:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    applyTxt:SetAllPoints()
-    applyTxt:SetText("Apply")
-    applyTxt:SetTextColor(C.textMuted[1], C.textMuted[2], C.textMuted[3], 1)
+    y = y - FIELD_H - 10
 
-    local applyBtn = CreateFrame("Button", nil, applyBox)
-    applyBtn:SetAllPoints()
-    applyBtn:SetScript("OnClick", ApplyMacroName)
-    applyBtn:SetScript("OnEnter", function()
-        applyBox:SetBackdropBorderColor(UC(C.gold))
-        applyTxt:SetTextColor(UC(C.gold))
-    end)
-    applyBtn:SetScript("OnLeave", function()
-        applyBox:SetBackdropBorderColor(C.fieldBord[1], C.fieldBord[2], C.fieldBord[3], 1)
-        applyTxt:SetTextColor(C.textMuted[1], C.textMuted[2], C.textMuted[3], 1)
-    end)
-
-    y = y - 32
-
-    local tgtLbl = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local tgtLbl = Theme.Text(f, "body", 12, "muted")
     tgtLbl:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
     tgtLbl:SetText("Current target:")
-    tgtLbl:SetTextColor(C.textMuted[1], C.textMuted[2], C.textMuted[3], 1)
 
-    targetDisplay = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    targetDisplay = Theme.Text(f, "strong", 12, "accent")
     targetDisplay:SetPoint("LEFT", tgtLbl, "RIGHT", 6, 0)
-    targetDisplay:SetTextColor(C.textPri[1], C.textPri[2], C.textPri[3], 1)
 
-    y = y - 38
+    y = y - 30
 
-    if ns.class == "PRIEST" then
-        f:SetHeight(FRAME_H - 54)
-    else
+    if ns.class ~= "PRIEST" then
         AddSection(f, "AUTOMATION", y)
         y = y - 28
 
@@ -243,22 +192,22 @@ local function BuildConfigFrame()
         tankToggle:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
         tankToggle:SetWidth(FRAME_W - PAD * 2)
         table.insert(toggles, tankToggle)
-        y = y - 26
-    end
+        y = y - ROW_H
 
-    if ns.class == "HUNTER" then
-        local petToggle = CreateToggle(f,
-            "Auto-set pet when leaving group",
-            function() return SmartAssistDB.autopet end,
-            function(v) SmartAssistDB.autopet = v end
-        )
-        petToggle:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
-        petToggle:SetWidth(FRAME_W - PAD * 2)
-        table.insert(toggles, petToggle)
-        y = y - 26
-    end
+        if ns.class == "HUNTER" then
+            local petToggle = CreateToggle(f,
+                "Auto-set pet when leaving group",
+                function() return SmartAssistDB.autopet end,
+                function(v) SmartAssistDB.autopet = v end
+            )
+            petToggle:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
+            petToggle:SetWidth(FRAME_W - PAD * 2)
+            table.insert(toggles, petToggle)
+            y = y - ROW_H
+        end
 
-    y = y - 12
+        y = y - 14
+    end
 
     AddSection(f, "MINIMAP", y)
     y = y - 28
@@ -277,14 +226,16 @@ local function BuildConfigFrame()
     minimapToggle:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
     minimapToggle:SetWidth(FRAME_W - PAD * 2)
     table.insert(toggles, minimapToggle)
+    y = y - ROW_H - PAD
 
+    f:SetHeight(-y)
     return f
 end
 
 function ns.RefreshConfigDisplay()
     if not configFrame or not configFrame:IsShown() then return end
 
-    if macroNameBox then
+    if macroNameBox and not macroNameBox:HasFocus() then
         macroNameBox:SetText(SmartAssistDB.macroName or "")
     end
 
@@ -292,10 +243,16 @@ function ns.RefreshConfigDisplay()
         targetDisplay:SetText(ns.GetTargetLabel())
     end
 
+    if configFrame.icon and ns.GetSpellIconID then
+        configFrame.icon:SetTexture(ns.GetSpellIconID())
+    end
+
     for _, tog in ipairs(toggles) do
         tog.Refresh()
     end
 end
+
+ns.RefreshUI = ns.RefreshConfigDisplay
 
 function ns.InitConfig()
     configFrame = BuildConfigFrame()
