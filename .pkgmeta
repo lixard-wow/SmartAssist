@@ -1,19 +1,5 @@
 package-as: MOTT
 
-externals:
-  Libs/LibStub:
-    url: https://repos.curseforge.com/wow/libstub/trunk
-    tag: latest
-  Libs/CallbackHandler-1.0:
-    url: https://repos.curseforge.com/wow/callbackhandler/trunk/CallbackHandler-1.0
-    tag: latest
-  Libs/LibDataBroker-1.1:
-    url: https://repos.curseforge.com/wow/libdatabroker-1-1/trunk
-    tag: latest
-  Libs/LibDBIcon-1.0:
-    url: https://repos.curseforge.com/wow/libdbicon-1-0/trunk/LibDBIcon-1.0
-    tag: latest
-
 ignore:
   - .vscode
   - .gitattributes
