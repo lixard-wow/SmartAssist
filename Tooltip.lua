@@ -98,7 +98,7 @@ local statusLbl
 local headerIcon
 
 local function BuildPopup()
-    local f = CreateFrame("Frame", "MOTTPopup", UIParent, "BackdropTemplate")
+    local f = CreateFrame("Frame", "SmartAssistPopup", UIParent, "BackdropTemplate")
     f:SetWidth(POPUP_W)
     f:SetFrameStrata("TOOLTIP")
     f:SetClampedToScreen(true)
@@ -127,7 +127,7 @@ local function BuildPopup()
     local title = hdr:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     title:SetPoint("LEFT", ico, "RIGHT", 8, 1)
     title:SetTextColor(C.gold[1], C.gold[2], C.gold[3], 1)
-    title:SetText("Mark of the Tank")
+    title:SetText("SmartAssist")
 
     local sub = hdr:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     sub:SetPoint("LEFT", ico, "RIGHT", 8, -10)
@@ -173,7 +173,7 @@ local function BuildPopup()
     f.clearSep:SetHeight(1)
     f.clearSep:Hide()
 
-    tinsert(UISpecialFrames, "MOTTPopup")
+    tinsert(UISpecialFrames, "SmartAssistPopup")
 
     f.footerDiv = Solid(f, C.divider, "ARTWORK")
     f.footerDiv:SetHeight(1)
@@ -222,9 +222,9 @@ local function ShowPopup(anchorFrame)
                 local tank = ns.FindTank and ns.FindTank()
                 if tank then
                     ns.SetTarget(tank)
-                    print("|cffC8A838MOTT|r: Target set to " .. tank)
+                    print("|cffC8A838SmartAssist|r: Target set to " .. tank)
                 else
-                    print("|cffC8A838MOTT|r: No tank found in group")
+                    print("|cffC8A838SmartAssist|r: No tank found in group")
                 end
             end,
         })
@@ -238,9 +238,9 @@ local function ShowPopup(anchorFrame)
                 local name = UnitIsPlayer("target") and GetUnitName("target", true)
                 if name and not (issecretvalue and issecretvalue(name)) then
                     ns.SetTarget(name)
-                    print("|cffC8A838MOTT|r: Target set to " .. name)
+                    print("|cffC8A838SmartAssist|r: Target set to " .. name)
                 else
-                    print("|cffC8A838MOTT|r: Target a player first")
+                    print("|cffC8A838SmartAssist|r: Target a player first")
                 end
             end,
         })
@@ -410,7 +410,7 @@ function ns.InitTooltip()
         PRIEST = "Interface\\Icons\\Spell_Holy_PowerInfusion",
     })[ns.class]
 
-    ns.dataObj = LDB:NewDataObject("MOTT", {
+    ns.dataObj = LDB:NewDataObject("SmartAssist", {
         type    = "data source",
         text    = GetTargetLabel(),
         icon    = iconPath,
@@ -427,5 +427,5 @@ function ns.InitTooltip()
         OnLeave = ScheduleHide,
     })
 
-    DBIcon:Register("MOTT", ns.dataObj, MOTT_DB.minimap)
+    DBIcon:Register("SmartAssist", ns.dataObj, SmartAssistDB.minimap)
 end

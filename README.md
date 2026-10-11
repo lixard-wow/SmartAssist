@@ -1,6 +1,6 @@
-# Mark of the Tank
+# SmartAssist
 
-Never edit your Misdirection or Tricks of the Trade macro again. Mark of the Tank builds the macro for you and keeps it pointed at the right player, switching to your tank automatically when you join a group.
+Never edit your Misdirection or Tricks of the Trade macro again. SmartAssist builds the macro for you and keeps it pointed at the right player, switching to your tank automatically when you join a group.
 
 - **Download:** [CurseForge](https://www.curseforge.com/wow/addons/mark-of-the-tank)
 - **User guide:** [lixard-wow.github.io/mark-of-the-tank](https://lixard-wow.github.io/mark-of-the-tank/)
@@ -25,4 +25,4 @@ The addon needs one free general macro slot.
 ## Commands
 | Command | What it does |
 | --- | --- |
-| `/mott` | Open settings (right-clicking the minimap button also works) |
+| `/smartassist` | Open settings (right-clicking the minimap button also works) |

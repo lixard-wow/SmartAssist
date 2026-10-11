@@ -92,7 +92,7 @@ local FRAME_H = 306
 local PAD     = 12
 
 local function BuildConfigFrame()
-    local f = CreateFrame("Frame", "MOTTConfigFrame", UIParent, "BackdropTemplate")
+    local f = CreateFrame("Frame", "SmartAssistConfigFrame", UIParent, "BackdropTemplate")
     f:SetSize(FRAME_W, FRAME_H)
     f:SetPoint("CENTER")
     f:SetFrameStrata("DIALOG")
@@ -111,7 +111,7 @@ local function BuildConfigFrame()
 
     local titleTxt = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     titleTxt:SetPoint("LEFT", titleBar, "LEFT", PAD, 0)
-    titleTxt:SetText("Mark of the Tank")
+    titleTxt:SetText("SmartAssist")
     titleTxt:SetTextColor(UC(C.gold))
 
     local closeBox = CreateFrame("Frame", nil, titleBar, "BackdropTemplate")
@@ -164,26 +164,26 @@ local function BuildConfigFrame()
 
     local function ApplyMacroName()
         if InCombatLockdown() then
-            macroNameBox:SetText(MOTT_DB.macroName or "")
+            macroNameBox:SetText(SmartAssistDB.macroName or "")
             macroNameBox:ClearFocus()
             return
         end
         local val = macroNameBox:GetText():match("^%s*(.-)%s*$")
         if val and val ~= "" then
-            local oldIdx = GetMacroIndexByName(MOTT_DB.macroName or "")
-            MOTT_DB.macroName = val
+            local oldIdx = GetMacroIndexByName(SmartAssistDB.macroName or "")
+            SmartAssistDB.macroName = val
             if oldIdx and oldIdx ~= 0 then
                 EditMacro(oldIdx, val, nil, nil)
             end
             ns.WriteMacro()
         else
-            macroNameBox:SetText(MOTT_DB.macroName or "")
+            macroNameBox:SetText(SmartAssistDB.macroName or "")
         end
         macroNameBox:ClearFocus()
     end
 
     macroNameBox:SetScript("OnEscapePressed", function(self)
-        self:SetText(MOTT_DB.macroName or "")
+        self:SetText(SmartAssistDB.macroName or "")
         self:ClearFocus()
     end)
     macroNameBox:SetScript("OnEnterPressed", ApplyMacroName)
@@ -237,8 +237,8 @@ local function BuildConfigFrame()
 
         local tankToggle = CreateToggle(f,
             "Auto-set tank when joining group",
-            function() return MOTT_DB.autotank end,
-            function(v) MOTT_DB.autotank = v end
+            function() return SmartAssistDB.autotank end,
+            function(v) SmartAssistDB.autotank = v end
         )
         tankToggle:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
         tankToggle:SetWidth(FRAME_W - PAD * 2)
@@ -249,8 +249,8 @@ local function BuildConfigFrame()
     if ns.class == "HUNTER" then
         local petToggle = CreateToggle(f,
             "Auto-set pet when leaving group",
-            function() return MOTT_DB.autopet end,
-            function(v) MOTT_DB.autopet = v end
+            function() return SmartAssistDB.autopet end,
+            function(v) SmartAssistDB.autopet = v end
         )
         petToggle:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
         petToggle:SetWidth(FRAME_W - PAD * 2)
@@ -265,12 +265,12 @@ local function BuildConfigFrame()
 
     local minimapToggle = CreateToggle(f,
         "Show minimap button",
-        function() return not MOTT_DB.minimap.hide end,
+        function() return not SmartAssistDB.minimap.hide end,
         function(v)
-            MOTT_DB.minimap.hide = not v
+            SmartAssistDB.minimap.hide = not v
             local dbi = LibStub and LibStub("LibDBIcon-1.0", true)
             if dbi then
-                if v then dbi:Show("MOTT") else dbi:Hide("MOTT") end
+                if v then dbi:Show("SmartAssist") else dbi:Hide("SmartAssist") end
             end
         end
     )
@@ -285,7 +285,7 @@ function ns.RefreshConfigDisplay()
     if not configFrame or not configFrame:IsShown() then return end
 
     if macroNameBox then
-        macroNameBox:SetText(MOTT_DB.macroName or "")
+        macroNameBox:SetText(SmartAssistDB.macroName or "")
     end
 
     if targetDisplay then
@@ -307,7 +307,7 @@ function ns.ToggleConfig()
         configFrame:Hide()
     else
         if macroNameBox then
-            macroNameBox:SetText(MOTT_DB.macroName or "")
+            macroNameBox:SetText(SmartAssistDB.macroName or "")
         end
         configFrame:Show()
         ns.RefreshConfigDisplay()

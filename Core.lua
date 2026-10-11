@@ -38,7 +38,7 @@ local function UnitLabel(label, unit)
 end
 
 ns.GetTargetLabel = function()
-    local db = MOTT_DB
+    local db = SmartAssistDB
     local t  = db.target or ""
     if     t == "pet"          then return db.petname ~= "" and db.petname or "Pet"
     elseif t == "target"       then return UnitLabel("Target", "target")
@@ -59,27 +59,27 @@ local DEFAULTS = {
 }
 
 local function InitDB()
-    MOTT_DB = MOTT_DB or {}
+    SmartAssistDB = SmartAssistDB or {}
     for k, v in pairs(DEFAULTS) do
-        if MOTT_DB[k] == nil then
-            MOTT_DB[k] = type(v) == "table" and CopyTable(v) or v
+        if SmartAssistDB[k] == nil then
+            SmartAssistDB[k] = type(v) == "table" and CopyTable(v) or v
         end
     end
-    MOTT_DB.minimap = MOTT_DB.minimap or CopyTable(DEFAULTS.minimap)
+    SmartAssistDB.minimap = SmartAssistDB.minimap or CopyTable(DEFAULTS.minimap)
 end
 
 local function UpdatePetName()
     if CLASS ~= "HUNTER" then return end
     local name = UnitName("pet")
     if name and name ~= UNKNOWNOBJECT then
-        MOTT_DB.petname = name
+        SmartAssistDB.petname = name
     end
 end
 
 ns.UpdatePetName = UpdatePetName
 
 local function BuildMacroText()
-    local db        = MOTT_DB
+    local db        = SmartAssistDB
     local target    = db.target or ""
     local spell     = SPELL.name
     local hasPet    = CLASS == "HUNTER" and UnitExists("pet")
@@ -115,7 +115,7 @@ local function WriteMacro()
         return
     end
 
-    local name = MOTT_DB.macroName or SPELL.name
+    local name = SmartAssistDB.macroName or SPELL.name
     local body = BuildMacroText()
     local icon = ns.IsSpellAvailable() and SPELL.iconID or ICON_UNAVAILABLE
     local idx  = GetMacroIndexByName(name)
@@ -123,7 +123,7 @@ local function WriteMacro()
     if idx == 0 then
         local result = CreateMacro(name, icon, body, nil)
         if not result then
-            print("|cffC8A838MOTT|r: Could not create macro \"" .. name .. "\" — macro limit reached (max 18 general macros).")
+            print("|cffC8A838SmartAssist|r: Could not create macro \"" .. name .. "\" — macro limit reached (max 18 general macros).")
         end
     else
         EditMacro(idx, name, icon, body)
@@ -133,7 +133,7 @@ end
 ns.WriteMacro = WriteMacro
 
 local function SetTarget(unitOrName)
-    MOTT_DB.target = unitOrName
+    SmartAssistDB.target = unitOrName
     WriteMacro()
     if ns.tooltip              then ns.tooltip:Hide()         end
     if ns.RefreshTooltipText   then ns.RefreshTooltipText()   end
@@ -186,12 +186,12 @@ end
 ns.FindTank = FindTank
 
 local function Notify(msg)
-    print("|cffC8A838MOTT|r: " .. msg)
+    print("|cffC8A838SmartAssist|r: " .. msg)
 end
 
 local function ApplyAutoTank()
     local tank = FindTank()
-    if tank and tank ~= MOTT_DB.target then
+    if tank and tank ~= SmartAssistDB.target then
         SetTarget(tank)
         Notify("Target set to " .. tank)
     end
@@ -222,17 +222,17 @@ waitFrame:SetScript("OnUpdate", function(self, elapsed)
 
     if nowIn and not inGroup then
         inGroup = true
-        if MOTT_DB.autotank then ApplyAutoTank() end
+        if SmartAssistDB.autotank then ApplyAutoTank() end
     elseif nowIn and inGroup then
-        if MOTT_DB.autotank then ApplyAutoTank() end
+        if SmartAssistDB.autotank then ApplyAutoTank() end
     elseif not nowIn and inGroup then
         inGroup = false
-        if MOTT_DB.autopet then ApplyAutoPet() end
+        if SmartAssistDB.autopet then ApplyAutoPet() end
     end
 
     if pendingZonePrompt then
         pendingZonePrompt = false
-        local t = MOTT_DB.target or ""
+        local t = SmartAssistDB.target or ""
         local noTarget = (t == "") or (t == "pet" and not UnitExists("pet"))
         if noTarget and ns.ShowTargetPrompt then
             ns.ShowTargetPrompt()
@@ -280,18 +280,18 @@ evtFrame:SetScript("OnEvent", function(self, event, arg1)
         if arg1 ~= "player" or CLASS ~= "HUNTER" then return end
         if UnitExists("pet") then
             UpdatePetName()
-            if MOTT_DB.target == "pet" then WriteMacro() end
+            if SmartAssistDB.target == "pet" then WriteMacro() end
         end
         if ns.RefreshTooltipText then ns.RefreshTooltipText() end
 
     elseif event == "PLAYER_TARGET_CHANGED" then
-        if MOTT_DB.target == "target" then
+        if SmartAssistDB.target == "target" then
             if not InCombatLockdown() then WriteMacro() end
             if ns.RefreshTooltipText then ns.RefreshTooltipText() end
         end
 
     elseif event == "PLAYER_FOCUS_CHANGED" then
-        if MOTT_DB.target == "focus" then
+        if SmartAssistDB.target == "focus" then
             if not InCombatLockdown() then WriteMacro() end
             if ns.RefreshTooltipText then ns.RefreshTooltipText() end
         end
@@ -317,7 +317,7 @@ evtFrame:SetScript("OnEvent", function(self, event, arg1)
     end
 end)
 
-SLASH_MOTT1 = "/mott"
-SlashCmdList["MOTT"] = function()
+SLASH_SMARTASSIST1 = "/smartassist"
+SlashCmdList["SMARTASSIST"] = function()
     if ns.ToggleConfig then ns.ToggleConfig() end
 end
