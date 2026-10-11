@@ -1,8 +1,8 @@
-## Interface: 120001
+## Interface: 120100, 120105
 ## Title: SmartAssist
 ## Notes: Smart Misdirection / Tricks of the Trade / Power Infusion macro helper. /smartassist to configure.
 ## Author: Lixard
-## Version: 1.0.0
+## Version: 2.0.0
 ## X-Curse-Project-ID: 1508635
 ## SavedVariablesPerCharacter: SmartAssistDB
 
