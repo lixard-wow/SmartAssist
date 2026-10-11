@@ -3,7 +3,7 @@
 Never edit your Misdirection, Tricks of the Trade or Power Infusion macro again. SmartAssist builds the macro for you and keeps it pointed at the right player, switching to your tank automatically when you join a group.
 
 - **Download:** [CurseForge](https://www.curseforge.com/wow/addons/mark-of-the-tank)
-- **User guide:** [lixard-wow.github.io/mark-of-the-tank](https://lixard-wow.github.io/mark-of-the-tank/)
+- **User guide:** [lixard-wow.github.io/smart-assist](https://lixard-wow.github.io/smart-assist/)
 - **Game:** Retail, Midnight
 - **Classes:** Hunter (Misdirection), Rogue (Tricks of the Trade) and Priest (Power Infusion).
 
