@@ -1,11 +1,18 @@
 package-as: SmartAssist
 
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
+
 ignore:
+  - .github
+  - .gitignore
   - .vscode
   - .gitattributes
   - .pkgmeta
   - README.md
+  - CURSEFORGE.md
+  - curseforge
   - description.html
   - docs
   - .luacheckrc
-  - .github

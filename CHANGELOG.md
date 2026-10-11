@@ -1,0 +1,36 @@
+# Changelog
+
+## Version 2.0.0
+
+**Mark of the Tank is now SmartAssist.** It covers Power Infusion as well, so it got a name that fits.
+
+### New
+
+- **Priest support: Power Infusion.** Target the player you want and choose **Save Target's Name** in the quick menu, or set the macro to your target, target of target or focus. Priests don't get automatic tank switching, since Power Infusion goes on a damage dealer.
+- **Choose your look.** Three looks to pick from: **Workbench** (flat and modern), **Artisan's Ledger** (warm walnut and brass) and **Lixard Classic** (black, grey and gold, with your class color as the accent). Click the sliders button next to the close button to switch. Your choice is saved for each character.
+- The quick menu and settings show the name of the player you're pointed at, for example "Focus: Bramblehide", and update when your target or focus changes.
+
+### Changed
+
+- **The command is now `/smartassist`** (it used to be `/mott`).
+- The quick menu and the settings window have been redesigned with new fonts and artwork.
+- Press Escape to close the settings window.
+- Updated for patch 12.1.5.
+
+### Fixed
+
+- Fixed a possible error when showing player names in places where the game hides them.
+
+### Updating from Mark of the Tank
+
+- Your settings start fresh. Settings are saved under the addon's name, so they can't carry across the rename. Your macro keeps its name, so your action bar button keeps working.
+- If a **MOTT** folder is still in your AddOns folder after updating, delete it. Running both at once makes them fight over the same macro.
+
+## Version 1.0.1
+
+- Updated for patch 12.0.5.
+- Clicking anywhere on a settings row now toggles it, not just the checkbox.
+
+## Version 1.0.0
+
+- First release as Mark of the Tank: Misdirection and Tricks of the Trade macro helper.
