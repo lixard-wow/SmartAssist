@@ -443,6 +443,11 @@ end)
 SLASH_SMARTASSIST1 = "/smartassist"
 SlashCmdList["SMARTASSIST"] = function(msg)
     msg = (msg or ""):lower():match("^%s*(.-)%s*$")
+    if msg == "resetguide" then
+        SmartAssistDB.wizardDone = nil
+        Notify("The setup guide will show again after you /reload.")
+        return
+    end
     if msg == "setup" or msg == "guide" then
         if InCombatLockdown() then
             ns.wizardPending = true
