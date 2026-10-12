@@ -2,7 +2,7 @@
 ## Title: SmartAssist
 ## Notes: Smart Misdirection / Tricks of the Trade / Power Infusion macro helper. /smartassist to configure.
 ## Author: Lixard
-## Version: 2.0.0
+## Version: 2.1.0
 ## X-Curse-Project-ID: 1508635
 ## SavedVariablesPerCharacter: SmartAssistDB
 
@@ -15,3 +15,4 @@ Theme.lua
 Core.lua
 Tooltip.lua
 Config.lua
+Wizard.lua

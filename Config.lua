@@ -5,7 +5,16 @@ local Theme = ns.Theme
 local configFrame
 local macroNameBox
 local targetDisplay
+local locationDisplay
 local toggles = {}
+
+function ns.SetMinimapShown(v)
+    SmartAssistDB.minimap.hide = not v
+    local dbi = LibStub and LibStub("LibDBIcon-1.0", true)
+    if dbi then
+        if v then dbi:Show("SmartAssist") else dbi:Hide("SmartAssist") end
+    end
+end
 
 local FRAME_W  = 360
 local HEADER_H = 42
@@ -146,7 +155,7 @@ local function BuildConfigFrame()
         end
         local val = macroNameBox:GetText():match("^%s*(.-)%s*$")
         if val and val ~= "" then
-            local oldIdx = GetMacroIndexByName(SmartAssistDB.macroName or "")
+            local oldIdx = ns.FindMacro(SmartAssistDB.macroName or "", SmartAssistDB.perCharacter)
             SmartAssistDB.macroName = val
             if oldIdx and oldIdx ~= 0 then
                 EditMacro(oldIdx, val, nil, nil)
@@ -178,7 +187,22 @@ local function BuildConfigFrame()
     targetDisplay = Theme.Text(f, "strong", 12, "accent")
     targetDisplay:SetPoint("LEFT", tgtLbl, "RIGHT", 6, 0)
 
-    y = y - 30
+    y = y - 24
+
+    local locLbl = Theme.Text(f, "body", 12, "muted")
+    locLbl:SetPoint("LEFT", f, "TOPLEFT", PAD, y - FIELD_H / 2)
+    locLbl:SetText("Saved in:")
+
+    locationDisplay = Theme.Text(f, "strong", 12, "text")
+    locationDisplay:SetPoint("LEFT", locLbl, "RIGHT", 6, 0)
+
+    local switchBtn = TextButton(f, "Switch", 60, function()
+        ns.SetMacroLocation(not SmartAssistDB.perCharacter)
+        ns.RefreshConfigDisplay()
+    end)
+    switchBtn:SetPoint("RIGHT", f, "TOPRIGHT", -PAD, y - FIELD_H / 2)
+
+    y = y - FIELD_H - 14
 
     if ns.class ~= "PRIEST" then
         AddSection(f, "AUTOMATION", y)
@@ -215,18 +239,22 @@ local function BuildConfigFrame()
     local minimapToggle = CreateToggle(f,
         "Show minimap button",
         function() return not SmartAssistDB.minimap.hide end,
-        function(v)
-            SmartAssistDB.minimap.hide = not v
-            local dbi = LibStub and LibStub("LibDBIcon-1.0", true)
-            if dbi then
-                if v then dbi:Show("SmartAssist") else dbi:Hide("SmartAssist") end
-            end
-        end
+        ns.SetMinimapShown
     )
     minimapToggle:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
     minimapToggle:SetWidth(FRAME_W - PAD * 2)
     table.insert(toggles, minimapToggle)
-    y = y - ROW_H - PAD
+    y = y - ROW_H - 14
+
+    AddSection(f, "HELP", y)
+    y = y - 32
+
+    local guideBtn = TextButton(f, "Open setup guide", 130, function()
+        f:Hide()
+        if ns.ShowWizard then ns.ShowWizard() end
+    end)
+    guideBtn:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
+    y = y - FIELD_H - PAD
 
     f:SetHeight(-y)
     return f
@@ -243,6 +271,10 @@ function ns.RefreshConfigDisplay()
         targetDisplay:SetText(ns.GetTargetLabel())
     end
 
+    if locationDisplay then
+        locationDisplay:SetText(ns.MacroTabName())
+    end
+
     if configFrame.icon and ns.GetSpellIconID then
         configFrame.icon:SetTexture(ns.GetSpellIconID())
     end
@@ -252,7 +284,10 @@ function ns.RefreshConfigDisplay()
     end
 end
 
-ns.RefreshUI = ns.RefreshConfigDisplay
+ns.RefreshUI = function()
+    ns.RefreshConfigDisplay()
+    if ns.RefreshWizard then ns.RefreshWizard() end
+end
 
 function ns.InitConfig()
     configFrame = BuildConfigFrame()

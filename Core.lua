@@ -109,21 +109,66 @@ local function BuildMacroText()
     end
 end
 
+ns.BuildMacroText = BuildMacroText
+
+local ACCOUNT_MAX = MAX_ACCOUNT_MACROS or 120
+local CHAR_MAX    = MAX_CHARACTER_MACROS or 18
+
+local function GetMacroName()
+    return SmartAssistDB.macroName or SPELL.name
+end
+
+ns.GetMacroName = GetMacroName
+
+local function FindMacro(name, perChar)
+    local numAccount, numChar = GetNumMacros()
+    local first, last = 1, numAccount or 0
+    if perChar then
+        first, last = ACCOUNT_MAX + 1, ACCOUNT_MAX + (numChar or 0)
+    end
+    for i = first, last do
+        if GetMacroInfo(i) == name then return i end
+    end
+    return 0
+end
+
+ns.FindMacro = FindMacro
+
+ns.MacroTabName = function(perChar)
+    if perChar == nil then perChar = SmartAssistDB.perCharacter end
+    if perChar then
+        return (CHARACTER_SPECIFIC_MACROS or "%s Specific Macros"):format(UnitName("player"))
+    end
+    return GENERAL_MACROS or "General Macros"
+end
+
+ns.IsMacroOnBar = function()
+    local name = GetMacroName()
+    for slot = 1, 180 do
+        if GetActionInfo(slot) == "macro" and GetActionText(slot) == name then
+            return true
+        end
+    end
+    return false
+end
+
 local function WriteMacro()
     if InCombatLockdown() then
         ns.pendingMacro = true
         return
     end
 
-    local name = SmartAssistDB.macroName or SPELL.name
-    local body = BuildMacroText()
-    local icon = ns.IsSpellAvailable() and SPELL.iconID or ICON_UNAVAILABLE
-    local idx  = GetMacroIndexByName(name)
+    local perChar = SmartAssistDB.perCharacter and true or false
+    local name    = GetMacroName()
+    local body    = BuildMacroText()
+    local icon    = ns.IsSpellAvailable() and SPELL.iconID or ICON_UNAVAILABLE
+    local idx     = FindMacro(name, perChar)
 
     if idx == 0 then
-        local result = CreateMacro(name, icon, body, nil)
+        local result = CreateMacro(name, icon, body, perChar)
         if not result then
-            print(ns.Theme.Code("accent") .. "SmartAssist|r: Could not create macro \"" .. name .. "\" — macro limit reached (max 18 general macros).")
+            print(ns.Theme.Code("accent") .. "SmartAssist|r: Could not create macro \"" .. name .. "\" because "
+                .. ns.MacroTabName(perChar) .. " is full (" .. (perChar and CHAR_MAX or ACCOUNT_MAX) .. " max).")
         end
     else
         EditMacro(idx, name, icon, body)
@@ -131,6 +176,33 @@ local function WriteMacro()
 end
 
 ns.WriteMacro = WriteMacro
+
+local function ResolveMacroLocation()
+    if SmartAssistDB.perCharacter ~= nil then return end
+    SmartAssistDB.perCharacter = FindMacro(GetMacroName(), false) == 0
+end
+
+local function SetMacroLocation(perChar)
+    perChar = perChar and true or false
+    if (SmartAssistDB.perCharacter and true or false) == perChar then return true end
+    if InCombatLockdown() then
+        print(ns.Theme.Code("accent") .. "SmartAssist|r: You can't move the macro during combat.")
+        return false
+    end
+    local name = GetMacroName()
+    SmartAssistDB.perCharacter = perChar
+    WriteMacro()
+    if FindMacro(name, perChar) == 0 then
+        SmartAssistDB.perCharacter = not perChar
+        return false
+    end
+    local old = FindMacro(name, not perChar)
+    if old ~= 0 then DeleteMacro(old) end
+    if ns.RefreshConfigDisplay then ns.RefreshConfigDisplay() end
+    return true
+end
+
+ns.SetMacroLocation = SetMacroLocation
 
 local function SetTarget(unitOrName)
     SmartAssistDB.target = unitOrName
@@ -274,7 +346,18 @@ evtFrame:SetScript("OnEvent", function(self, event, arg1)
             waitAccum = 0
             waitFrame:Show()
         end
+        ResolveMacroLocation()
         WriteMacro()
+        if not SmartAssistDB.wizardDone and not ns.wizardQueued then
+            ns.wizardQueued = true
+            C_Timer.After(3, function()
+                if InCombatLockdown() then
+                    ns.wizardPending = true
+                elseif ns.ShowWizard then
+                    ns.ShowWizard()
+                end
+            end)
+        end
 
     elseif event == "UNIT_PET" then
         if arg1 ~= "player" or CLASS ~= "HUNTER" then return end
@@ -308,6 +391,10 @@ evtFrame:SetScript("OnEvent", function(self, event, arg1)
             ns.pendingMacro = false
             WriteMacro()
         end
+        if ns.wizardPending then
+            ns.wizardPending = false
+            if ns.ShowWizard then ns.ShowWizard() end
+        end
 
     elseif event == "PLAYER_TALENT_UPDATE" or event == "SPELLS_CHANGED" then
         if not InCombatLockdown() then
@@ -318,6 +405,15 @@ evtFrame:SetScript("OnEvent", function(self, event, arg1)
 end)
 
 SLASH_SMARTASSIST1 = "/smartassist"
-SlashCmdList["SMARTASSIST"] = function()
+SlashCmdList["SMARTASSIST"] = function(msg)
+    msg = (msg or ""):lower():match("^%s*(.-)%s*$")
+    if msg == "setup" or msg == "guide" then
+        if InCombatLockdown() then
+            ns.wizardPending = true
+        elseif ns.ShowWizard then
+            ns.ShowWizard()
+        end
+        return
+    end
     if ns.ToggleConfig then ns.ToggleConfig() end
 end
