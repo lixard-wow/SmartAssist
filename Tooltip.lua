@@ -8,7 +8,7 @@ local POPUP_W  = 224
 local HEADER_H = 42
 local ROW_H    = 24
 local FOOTER_H = 28
-local MAX_ROWS = 7
+local MAX_ROWS = 10
 local ACCENT_W = 3
 local INSET    = 8
 local GAP      = 6
@@ -217,18 +217,16 @@ local function ShowPopup(anchorFrame)
     end
 
     if ns.class == "PRIEST" then
-        table.insert(actions, {
-            label = "Save Target's Name",
-            fn    = function()
-                local name = UnitIsPlayer("target") and GetUnitName("target", true)
-                if name and not (issecretvalue and issecretvalue(name)) then
+        for _, name in ipairs(ns.GetGroupDamagers()) do
+            table.insert(actions, {
+                label = "Set to " .. name,
+                fn    = function()
                     ns.SetTarget(name)
                     Notify("Target set to " .. name)
-                else
-                    Notify("Target a player first")
-                end
-            end,
-        })
+                end,
+            })
+        end
+        table.insert(actions, { label = "Save Target's Name", fn = ns.SaveTargetName })
     end
 
     table.insert(actions, { label = "Set to Target",           fn = function() ns.SetTarget("target")       end })

@@ -50,7 +50,7 @@ ns.GetTargetLabel = function()
 end
 
 local DEFAULTS = {
-    target    = CLASS == "HUNTER" and "pet" or "focus",
+    target    = CLASS == "HUNTER" and "pet" or CLASS == "PRIEST" and "" or "focus",
     petname   = "",
     macroName = CLASS_SPELL.name,
     minimap   = { hide = false },
@@ -257,9 +257,45 @@ end
 
 ns.FindTank = FindTank
 
+local function ReadableName(unit)
+    local name = GetUnitName(unit, true)
+    if not name or (issecretvalue and issecretvalue(name)) then return nil end
+    return name
+end
+
+ns.GetGroupDamagers = function()
+    local list = {}
+    if IsInRaid() then return list end
+    for i = 1, GetNumSubgroupMembers() do
+        local unit = "party" .. i
+        if UnitIsConnected(unit) and UnitGroupRolesAssigned(unit) == "DAMAGER" then
+            local name = ReadableName(unit)
+            if name then list[#list + 1] = name end
+        end
+    end
+    return list
+end
+
+ns.IsNamedTarget = function(t)
+    t = t or SmartAssistDB.target or ""
+    return t ~= "" and t ~= "pet" and t ~= "target" and t ~= "targettarget" and t ~= "focus"
+end
+
 local function Notify(msg)
     print(ns.Theme.Code("accent") .. "SmartAssist|r: " .. msg)
 end
+
+ns.SaveTargetName = function()
+    local name = UnitIsPlayer("target") and ReadableName("target")
+    if name then
+        SetTarget(name)
+        Notify("Target set to " .. name)
+        return name
+    end
+    Notify("Target a player first")
+end
+
+ns.Notify = Notify
 
 local function ApplyAutoTank()
     local tank = FindTank()

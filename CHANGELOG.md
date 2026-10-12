@@ -7,8 +7,11 @@
 - **Setup guide.** The first time you log in on each Hunter, Rogue or Priest, a short guide explains how SmartAssist works and lets you choose who the macro is aimed at and what it does automatically. It then shows you how to put the macro on your action bar: drag it straight from the guide, or follow the steps to find it in the macro window. Open it again any time with `/smartassist setup` or the button in the settings.
 - **Choose where your macro is saved.** Keep it in your character's own macro tab (for example "Transdead Specific Macros") or in General Macros, shared by all your characters. Change it in the guide or with the Switch button in the settings.
 
+- **Power Infusion by name, like Misdirection.** In a party, the quick menu lists your damage dealers. Click one and their name goes straight into the macro, so you don't need to set a focus. Save Target's Name still works anywhere.
+
 ### Changed
 
+- New Priests no longer start aimed at focus. Pick a player by name instead.
 - New characters now save the macro in their own character tab. If you already have the macro in General Macros, it stays there so your action bar button keeps working.
 
 ## Version 2.0.0

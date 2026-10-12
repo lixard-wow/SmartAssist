@@ -132,7 +132,7 @@ local function BuildWelcome()
     elseif ns.class == "ROGUE" then
         who = "your tank, your focus or your target"
     else
-        who = "a player you've saved by name, your focus or your target"
+        who = "the player you pick by name, your focus or your target"
     end
 
     local a = Paragraph(p, h, 12, "SmartAssist makes one " .. spell .. " macro for "
@@ -146,7 +146,7 @@ local function BuildWelcome()
     elseif ns.class == "ROGUE" then
         c = Paragraph(p, b, 10, "When you join a group it can find the tank by itself. If the player you picked isn't around, the macro uses your target.")
     else
-        c = Paragraph(p, b, 10, "Power Infusion goes on a damage dealer, so SmartAssist doesn't pick the tank for you. To save a player, target them, hover the minimap button and choose Save Target's Name. If the player you picked isn't around, the macro uses your target.")
+        c = Paragraph(p, b, 10, "Pick a player and their name goes straight into the macro, the same way Misdirection gets the tank's name, so there's no focus to set up. In a party, the quick menu lists your damage dealers by name. Anywhere else, target the player and choose Save Target's Name. If they aren't around, the macro uses your target.")
     end
 
     Paragraph(p, c, 16, "This guide takes about a minute. It shows once for each " .. (ns.class == "HUNTER" and "Hunter" or ns.class == "ROGUE" and "Rogue" or "Priest")
@@ -166,6 +166,52 @@ local function BuildBehaviour()
         last = Radio(p, l, 8, "Your pet", "Best when you play solo.", getTarget, "pet", ns.SetTarget)
         last = Radio(p, last, 4, "Your focus", "Whoever you've set as your focus.", getTarget, "focus", ns.SetTarget)
         last = Radio(p, last, 4, "Your target", "Whoever you have targeted when you press it.", getTarget, "target", ns.SetTarget)
+    elseif ns.class == "PRIEST" then
+        last = Choice(p, l, 8, "A player, by name (recommended)",
+            "Their name goes straight into the macro, so you don't need a focus. Pick someone below.",
+            function() return ns.IsNamedTarget() end,
+            function() ns.SaveTargetName() end)
+
+        local picks = CreateFrame("Frame", nil, p)
+        picks:SetSize(CONTENT - 28, FIELD_H)
+        picks:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 28, -6)
+        local btns = {}
+        local bw = math.floor((CONTENT - 28 - 4 * 4) / 5)
+        for i = 1, 5 do
+            local b = TextButton(picks, "", bw, function(self)
+                if self.name then
+                    ns.SetTarget(self.name)
+                    ns.Notify("Target set to " .. self.name)
+                else
+                    ns.SaveTargetName()
+                end
+                ns.RefreshWizard()
+            end)
+            b.label:SetWidth(bw - 8)
+            b:SetPoint("LEFT", picks, "LEFT", (i - 1) * (bw + 4), 0)
+            btns[i] = b
+        end
+        refresh[#refresh + 1] = function()
+            btns[1].name = nil
+            btns[1].label:SetText("My target")
+            local list = ns.GetGroupDamagers()
+            for i = 2, 5 do
+                local name = list[i - 1]
+                btns[i].name = name
+                btns[i].label:SetText(name and Ambiguate(name, "short") or "")
+                btns[i]:SetShown(name ~= nil)
+            end
+        end
+
+        local hint = Theme.Text(p, "body", 11, "muted")
+        hint:SetPoint("TOPLEFT", picks, "BOTTOMLEFT", 0, -5)
+        hint:SetText("In a party, your damage dealers show up here.")
+        local holder = CreateFrame("Frame", nil, p)
+        holder:SetSize(1, 1)
+        holder:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 0, -(6 + FIELD_H + 20))
+
+        last = Radio(p, holder, 6, "Your focus", "Whoever you've set as your focus.", getTarget, "focus", ns.SetTarget)
+        last = Radio(p, last, 4, "Your target", "Whoever you have targeted when you press it.", getTarget, "target", ns.SetTarget)
     else
         last = Radio(p, l, 8, "Your focus", "Whoever you've set as your focus.", getTarget, "focus", ns.SetTarget)
         last = Radio(p, last, 4, "Your target", "Whoever you have targeted when you press it.", getTarget, "target", ns.SetTarget)
@@ -179,7 +225,7 @@ local function BuildBehaviour()
     anchor:SetSize(1, 1)
     anchor:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 0, -16)
 
-    local l2 = Label(p, anchor, 10, "AUTOMATIC")
+    local l2 = Label(p, anchor, 10, ns.class == "PRIEST" and "MINIMAP" or "AUTOMATIC")
     last = l2
     if ns.class ~= "PRIEST" then
         last = Toggle(p, last, 8, "Find the tank when I join a group",
@@ -334,7 +380,7 @@ local function BuildDone()
     local b1 = Paragraph(p, l, 8, "-  Hover the minimap button for the quick menu. The name at the bottom shows who the macro is aimed at right now.")
     local b2
     if ns.class == "PRIEST" then
-        b2 = Paragraph(p, b1, 6, "-  To pick a specific player, target them and choose Save Target's Name.")
+        b2 = Paragraph(p, b1, 6, "-  In a party, click a damage dealer's name in the quick menu. Anywhere else, target the player and choose Save Target's Name.")
     else
         b2 = Paragraph(p, b1, 6, "-  In a group, choose Set to Party Tank (or Raid Tank) to aim it at the tank straight away.")
     end
@@ -432,10 +478,13 @@ local function BuildWizard()
 
     f:SetScript("OnHide", function()
         SmartAssistDB.wizardDone = true
-        f:UnregisterEvent("ACTIONBAR_SLOT_CHANGED")
+        f:UnregisterAllEvents()
     end)
     f:SetScript("OnShow", function()
         f:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
+        f:RegisterEvent("GROUP_ROSTER_UPDATE")
+        f:RegisterEvent("PLAYER_TARGET_CHANGED")
+        f:RegisterEvent("PLAYER_FOCUS_CHANGED")
     end)
     f:SetScript("OnEvent", function() ns.RefreshWizard() end)
 end
