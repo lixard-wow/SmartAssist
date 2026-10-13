@@ -136,7 +136,21 @@ local function BuildBehaviour()
     local getTarget = function() return SmartAssistDB.target end
 
     local h = Heading(p, nil, 0, "How should it behave?")
-    local l = Label(p, h, 14, "AIM " .. ns.GetSpellName():upper() .. " AT")
+    local top = h
+    if ns.class ~= "PRIEST" then
+        top = Label(p, h, 14, "AUTOMATIC")
+        top = Toggle(p, top, 8, "Find the tank when I join a group",
+            "Aims the macro at the group's tank as soon as you join.",
+            function() return SmartAssistDB.autotank end,
+            function(v) SmartAssistDB.autotank = v end)
+        if ns.class == "HUNTER" then
+            top = Toggle(p, top, 4, "Switch back to my pet when I leave",
+                "Aims the macro at your pet again once the group ends.",
+                function() return SmartAssistDB.autopet end,
+                function(v) SmartAssistDB.autopet = v end)
+        end
+    end
+    local l = Label(p, top, 14, "AIM " .. ns.GetSpellName():upper() .. " AT")
 
     local last
     if ns.class == "HUNTER" then
@@ -202,21 +216,8 @@ local function BuildBehaviour()
     anchor:SetSize(1, 1)
     anchor:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 0, -16)
 
-    local l2 = Label(p, anchor, 10, ns.class == "PRIEST" and "MINIMAP" or "AUTOMATIC")
-    last = l2
-    if ns.class ~= "PRIEST" then
-        last = Toggle(p, last, 8, "Find the tank when I join a group",
-            "Aims the macro at the group's tank as soon as you join.",
-            function() return SmartAssistDB.autotank end,
-            function(v) SmartAssistDB.autotank = v end)
-        if ns.class == "HUNTER" then
-            last = Toggle(p, last, 4, "Switch back to my pet when I leave",
-                "Aims the macro at your pet again once the group ends.",
-                function() return SmartAssistDB.autopet end,
-                function(v) SmartAssistDB.autopet = v end)
-        end
-    end
-    Toggle(p, last, 4, "Show the minimap button",
+    last = Label(p, anchor, 10, "MINIMAP")
+    Toggle(p, last, 8, "Show the minimap button",
         "Hover it for the quick menu, right-click it for settings. Without it, type /smartassist.",
         function() return not SmartAssistDB.minimap.hide end,
         ns.SetMinimapShown)
