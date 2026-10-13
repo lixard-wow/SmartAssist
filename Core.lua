@@ -157,7 +157,7 @@ end
 ns.IsMacroOnBar = function()
     local name = GetMacroName()
     for slot = 1, 180 do
-        if GetActionInfo(slot) == "macro" and GetActionText(slot) == name then
+        if GetActionInfo(slot) == "macro" and C_ActionBar.GetActionText(slot) == name then
             return true
         end
     end
