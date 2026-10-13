@@ -1,4 +1,4 @@
-local addonName, ns = ...
+local _, ns = ...
 
 local Theme = ns.Theme
 
@@ -51,10 +51,8 @@ end
 
 function ns.SetMinimapShown(v)
     SmartAssistDB.minimap.hide = not v
-    local dbi = LibStub and LibStub("LibDBIcon-1.0", true)
-    if dbi then
-        if v then dbi:Show("SmartAssist") else dbi:Hide("SmartAssist") end
-    end
+    local dbi = LibStub("LibDBIcon-1.0")
+    if v then dbi:Show("SmartAssist") else dbi:Hide("SmartAssist") end
 end
 
 local FRAME_W  = 360
@@ -103,48 +101,9 @@ local function TextButton(parent, text, width, onClick)
 end
 
 local function BuildConfigFrame()
-    local f = CreateFrame("Frame", "SmartAssistConfigFrame", UIParent)
+    local f = Theme.Frame("SmartAssistConfigFrame", "DIALOG", HEADER_H, true)
     f:SetWidth(FRAME_W)
     f:SetPoint("CENTER")
-    f:SetFrameStrata("DIALOG")
-    f:SetMovable(true)
-    f:EnableMouse(true)
-    f:SetClampedToScreen(true)
-    f:Hide()
-    Theme.Window(f, HEADER_H)
-    tinsert(UISpecialFrames, "SmartAssistConfigFrame")
-
-    local drag = CreateFrame("Frame", nil, f)
-    drag:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-    drag:SetPoint("TOPRIGHT", f, "TOPRIGHT", -70, 0)
-    drag:SetHeight(HEADER_H)
-    drag:EnableMouse(true)
-    drag:SetScript("OnMouseDown", function() f:StartMoving() end)
-    drag:SetScript("OnMouseUp",   function() f:StopMovingOrSizing() end)
-
-    local ico = f:CreateTexture(nil, "ARTWORK")
-    ico:SetSize(22, 22)
-    ico:SetPoint("LEFT", f, "TOPLEFT", 12, -HEADER_H / 2)
-    ico:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    ico:SetTexture(ns.GetSpellIconID and ns.GetSpellIconID())
-    f.icon = ico
-
-    local title = Theme.Text(f, "title", nil, "title")
-    title:SetPoint("BOTTOMLEFT", ico, "RIGHT", 8, 0)
-    Theme.SetTitle(title, "SmartAssist")
-
-    local sub = Theme.Text(f, "body", 11, "muted")
-    sub:SetPoint("TOPLEFT", ico, "RIGHT", 8, -1)
-    sub:SetText(ns.GetSpellName and ns.GetSpellName() or "")
-    f.subLbl = sub
-
-    local btnSize = HEADER_H - 18
-    local closeBtn = Theme.IconButton(f, "icon_close", btnSize, function() f:Hide() end, "Close")
-    closeBtn:SetPoint("RIGHT", f, "TOPRIGHT", -10, -HEADER_H / 2)
-
-    local themeBtn = Theme.IconButton(f, "icon_gear", btnSize, function() Theme.Next() end,
-        function() return "Theme: " .. Theme.T.name .. "\nClick for the next theme" end)
-    themeBtn:SetPoint("RIGHT", closeBtn, "LEFT", -4, 0)
 
     local y = -(HEADER_H + 14)
 
@@ -174,26 +133,26 @@ local function BuildConfigFrame()
 
     local function ApplyMacroName()
         if InCombatLockdown() then
-            macroNameBox:SetText(SmartAssistDB.macroName or "")
+            macroNameBox:SetText(ns.GetMacroName())
             macroNameBox:ClearFocus()
             return
         end
         local val = macroNameBox:GetText():match("^%s*(.-)%s*$")
         if val and val ~= "" then
-            local oldIdx = ns.FindMacro(SmartAssistDB.macroName or "", SmartAssistDB.perCharacter)
+            local oldIdx = ns.FindMacro(ns.GetMacroName(), SmartAssistDB.perCharacter)
             SmartAssistDB.macroName = val
             if oldIdx and oldIdx ~= 0 then
                 EditMacro(oldIdx, val, nil, nil)
             end
             ns.WriteMacro()
         else
-            macroNameBox:SetText(SmartAssistDB.macroName or "")
+            macroNameBox:SetText(ns.GetMacroName())
         end
         macroNameBox:ClearFocus()
     end
 
     macroNameBox:SetScript("OnEscapePressed", function(self)
-        self:SetText(SmartAssistDB.macroName or "")
+        self:SetText(ns.GetMacroName())
         self:ClearFocus()
     end)
     macroNameBox:SetScript("OnEnterPressed", ApplyMacroName)
@@ -287,7 +246,7 @@ local function BuildConfigFrame()
 
     local guideBtn = TextButton(f, "Open setup guide", 130, function()
         f:Hide()
-        if ns.ShowWizard then ns.ShowWizard() end
+        ns.ShowWizard()
     end)
     guideBtn:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
     y = y - FIELD_H - PAD
@@ -300,7 +259,7 @@ function ns.RefreshConfigDisplay()
     if not configFrame or not configFrame:IsShown() then return end
 
     if macroNameBox and not macroNameBox:HasFocus() then
-        macroNameBox:SetText(SmartAssistDB.macroName or "")
+        macroNameBox:SetText(ns.GetMacroName())
     end
 
     if targetDisplay then
@@ -313,10 +272,6 @@ function ns.RefreshConfigDisplay()
 
     if dragButton then dragButton.Refresh() end
 
-    if configFrame.icon and ns.GetSpellIconID then
-        configFrame.icon:SetTexture(ns.GetSpellIconID())
-    end
-
     for _, tog in ipairs(toggles) do
         tog.Refresh()
     end
@@ -324,7 +279,7 @@ end
 
 ns.RefreshUI = function()
     ns.RefreshConfigDisplay()
-    if ns.RefreshWizard then ns.RefreshWizard() end
+    ns.RefreshWizard()
 end
 
 function ns.InitConfig()
@@ -337,7 +292,7 @@ function ns.ToggleConfig()
         configFrame:Hide()
     else
         if macroNameBox then
-            macroNameBox:SetText(SmartAssistDB.macroName or "")
+            macroNameBox:SetText(ns.GetMacroName())
         end
         configFrame:Show()
         ns.RefreshConfigDisplay()

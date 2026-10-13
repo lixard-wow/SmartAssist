@@ -93,7 +93,7 @@ function Theme.Set(key)
     SmartAssistDB.theme = key
     Theme.Load()
     for _, fn in ipairs(skins) do fn(Theme.T, Theme.C) end
-    if ns.RefreshUI then ns.RefreshUI() end
+    ns.RefreshUI()
 end
 
 function Theme.Next()
@@ -236,6 +236,49 @@ function Theme.Window(frame, headerHeight)
     end)
 end
 
+function Theme.Frame(name, strata, headerH, movable)
+    local f = CreateFrame("Frame", name, UIParent)
+    f:SetFrameStrata(strata)
+    f:EnableMouse(true)
+    f:SetClampedToScreen(true)
+    f:Hide()
+    Theme.Window(f, headerH)
+    tinsert(UISpecialFrames, name)
+
+    if movable then
+        f:SetMovable(true)
+        local drag = CreateFrame("Frame", nil, f)
+        drag:SetPoint("TOPLEFT")
+        drag:SetPoint("TOPRIGHT", -70, 0)
+        drag:SetHeight(headerH)
+        drag:EnableMouse(true)
+        drag:SetScript("OnMouseDown", function() f:StartMoving() end)
+        drag:SetScript("OnMouseUp", function() f:StopMovingOrSizing() end)
+    end
+
+    local ico = f:CreateTexture(nil, "ARTWORK")
+    ico:SetSize(22, 22)
+    ico:SetPoint("LEFT", f, "TOPLEFT", 12, -headerH / 2)
+    ico:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    ico:SetTexture(ns.GetSpellIconID())
+
+    local title = Theme.Text(f, "title", nil, "title")
+    title:SetPoint("BOTTOMLEFT", ico, "RIGHT", 8, 0)
+    Theme.SetTitle(title, "SmartAssist")
+
+    f.subLbl = Theme.Text(f, "body", 11, "muted")
+    f.subLbl:SetPoint("TOPLEFT", ico, "RIGHT", 8, -1)
+    f.subLbl:SetText(ns.GetSpellName())
+
+    local size = headerH - 18
+    f.closeBtn = Theme.IconButton(f, "icon_close", size, function() f:Hide() end, "Close")
+    f.closeBtn:SetPoint("RIGHT", f, "TOPRIGHT", -10, -headerH / 2)
+    f.themeBtn = Theme.IconButton(f, "icon_gear", size, function() Theme.Next() end,
+        function() return "Theme: " .. Theme.T.name .. "\nClick for the next theme" end)
+    f.themeBtn:SetPoint("RIGHT", f.closeBtn, "LEFT", -4, 0)
+    return f
+end
+
 function Theme.IconButton(parent, icon, size, onClick, tooltip)
     local b = CreateFrame("Button", nil, parent)
     b:SetSize(size, size)
@@ -287,7 +330,7 @@ end
 function Theme.Check(parent, size, onClick)
     local b = CreateFrame("Button", nil, parent)
     b:SetSize(size, size)
-    local fill, edge = Theme.Box(b, "field", "border", "buttonRadius")
+    local _, edge = Theme.Box(b, "field", "border", "buttonRadius")
     local mark = b:CreateTexture(nil, "ARTWORK")
     mark:SetPoint("TOPLEFT", 4, -4)
     mark:SetPoint("BOTTOMRIGHT", -4, 4)

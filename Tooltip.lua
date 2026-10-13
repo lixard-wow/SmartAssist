@@ -1,4 +1,4 @@
-local addonName, ns = ...
+local _, ns = ...
 
 local LDB    = LibStub("LibDataBroker-1.1")
 local DBIcon = LibStub("LibDBIcon-1.0")
@@ -87,45 +87,17 @@ end
 
 local rows = {}
 local statusLbl
-local headerIcon
 
 local function BuildPopup()
-    local f = CreateFrame("Frame", "SmartAssistPopup", UIParent)
+    local f = Theme.Frame("SmartAssistPopup", "TOOLTIP", HEADER_H)
     f:SetWidth(POPUP_W)
-    f:SetFrameStrata("TOOLTIP")
-    f:SetClampedToScreen(true)
-    f:EnableMouse(true)
-    f:Hide()
     f:SetScript("OnEnter", CancelHide)
     f:SetScript("OnLeave", ScheduleHide)
     f:SetScript("OnHide", function() isPrompt = false end)
-    Theme.Window(f, HEADER_H)
-
-    local ico = f:CreateTexture(nil, "ARTWORK")
-    ico:SetSize(22, 22)
-    ico:SetPoint("LEFT", f, "TOPLEFT", 12, -HEADER_H / 2)
-    ico:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    headerIcon = ico
-
-    local title = Theme.Text(f, "title", nil, "title")
-    title:SetPoint("BOTTOMLEFT", ico, "RIGHT", 8, 0)
-    Theme.SetTitle(title, "SmartAssist")
-
-    local sub = Theme.Text(f, "body", 11, "muted")
-    sub:SetPoint("TOPLEFT", ico, "RIGHT", 8, -1)
-    f.subLbl = sub
-
-    local btnSize = HEADER_H - 18
-    local closeBtn = Theme.IconButton(f, "icon_close", btnSize, function() f:Hide() end, "Close")
-    closeBtn:SetPoint("RIGHT", f, "TOPRIGHT", -10, -HEADER_H / 2)
-    closeBtn:HookScript("OnEnter", CancelHide)
-    closeBtn:HookScript("OnLeave", ScheduleHide)
-
-    local themeBtn = Theme.IconButton(f, "icon_gear", btnSize, function() Theme.Next() end,
-        function() return "Theme: " .. Theme.T.name .. "\nClick for the next theme" end)
-    themeBtn:SetPoint("RIGHT", closeBtn, "LEFT", -4, 0)
-    themeBtn:HookScript("OnEnter", CancelHide)
-    themeBtn:HookScript("OnLeave", ScheduleHide)
+    for _, b in ipairs({ f.closeBtn, f.themeBtn }) do
+        b:HookScript("OnEnter", CancelHide)
+        b:HookScript("OnLeave", ScheduleHide)
+    end
 
     for i = 1, MAX_ROWS do
         rows[i] = MakeRow(f)
@@ -162,7 +134,6 @@ local function BuildPopup()
     statusLbl = Theme.Text(f, "strong", 12, "accent")
     statusLbl:SetPoint("LEFT", statusPfx, "RIGHT", 5, 0)
 
-    tinsert(UISpecialFrames, "SmartAssistPopup")
     return f
 end
 
@@ -184,13 +155,6 @@ local function ShowPopup(anchorFrame)
     if InCombatLockdown() then return end
     if not popup then popup = BuildPopup() end
 
-    if headerIcon and ns.GetSpellIconID then
-        headerIcon:SetTexture(ns.GetSpellIconID())
-    end
-    if popup.subLbl and ns.GetSpellName then
-        popup.subLbl:SetText(ns.GetSpellName())
-    end
-
     local actions = {}
     local inGroup = (GetNumGroupMembers() > 0) or (UnitInRaid("player") ~= nil)
 
@@ -199,7 +163,7 @@ local function ShowPopup(anchorFrame)
         table.insert(actions, {
             label = lbl,
             fn    = function()
-                local tank = ns.FindTank and ns.FindTank()
+                local tank = ns.FindTank()
                 if tank then
                     ns.SetTarget(tank)
                     ns.Notify("Target set to " .. tank)
@@ -238,10 +202,10 @@ local function ShowPopup(anchorFrame)
         fn        = function() ns.ClearTarget() end,
     })
 
-    local spellAvail = ns.IsSpellAvailable and ns.IsSpellAvailable()
+    local spellAvail = ns.IsSpellAvailable()
 
     if not spellAvail then
-        popup.warnTxt:SetText("Not talented into " .. (ns.GetSpellName and ns.GetSpellName() or "spell"))
+        popup.warnTxt:SetText("Not talented into " .. ns.GetSpellName())
         popup.warnRow:Show()
         for i = 1, MAX_ROWS do
             rows[i].action = nil
@@ -330,7 +294,7 @@ function ns.InitTooltip()
         icon    = iconPath,
         OnClick = function(_, btn)
             if btn == "RightButton" then
-                if ns.ToggleConfig then ns.ToggleConfig() end
+                ns.ToggleConfig()
             end
         end,
         OnEnter = function(frame)

@@ -1,4 +1,4 @@
-local addonName, ns = ...
+local _, ns = ...
 
 local Theme = ns.Theme
 
@@ -50,7 +50,7 @@ local function Choice(page, prev, gap, label, desc, isOn, onPick)
 
     local cb = Theme.Check(row, 16, function(self)
         onPick(self:GetChecked())
-        if ns.RefreshWizard then ns.RefreshWizard() end
+        ns.RefreshWizard()
     end)
     cb:SetPoint("TOPLEFT", row, "TOPLEFT", 2, -3)
 
@@ -356,47 +356,11 @@ function ns.RefreshWizard()
 end
 
 local function BuildWizard()
-    local f = CreateFrame("Frame", "SmartAssistWizard", UIParent)
+    local f = Theme.Frame("SmartAssistWizard", "DIALOG", HEADER_H, true)
     f:SetSize(W, H)
     f:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
-    f:SetFrameStrata("DIALOG")
-    f:SetMovable(true)
-    f:EnableMouse(true)
-    f:SetClampedToScreen(true)
-    f:Hide()
-    Theme.Window(f, HEADER_H)
-    tinsert(UISpecialFrames, "SmartAssistWizard")
+    f.subLbl:SetText("Setup for " .. PlayerName())
     wizard = f
-
-    local drag = CreateFrame("Frame", nil, f)
-    drag:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-    drag:SetPoint("TOPRIGHT", f, "TOPRIGHT", -70, 0)
-    drag:SetHeight(HEADER_H)
-    drag:EnableMouse(true)
-    drag:SetScript("OnMouseDown", function() f:StartMoving() end)
-    drag:SetScript("OnMouseUp",   function() f:StopMovingOrSizing() end)
-
-    local ico = f:CreateTexture(nil, "ARTWORK")
-    ico:SetSize(22, 22)
-    ico:SetPoint("LEFT", f, "TOPLEFT", 12, -HEADER_H / 2)
-    ico:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    ico:SetTexture(ns.GetSpellIconID())
-
-    local title = Theme.Text(f, "title", nil, "title")
-    title:SetPoint("BOTTOMLEFT", ico, "RIGHT", 8, 0)
-    Theme.SetTitle(title, "SmartAssist")
-
-    local sub = Theme.Text(f, "body", 11, "muted")
-    sub:SetPoint("TOPLEFT", ico, "RIGHT", 8, -1)
-    sub:SetText("Setup for " .. PlayerName())
-
-    local btnSize = HEADER_H - 18
-    local closeBtn = Theme.IconButton(f, "icon_close", btnSize, function() f:Hide() end, "Close")
-    closeBtn:SetPoint("RIGHT", f, "TOPRIGHT", -10, -HEADER_H / 2)
-
-    local themeBtn = Theme.IconButton(f, "icon_gear", btnSize, function() Theme.Next() end,
-        function() return "Theme: " .. Theme.T.name .. "\nClick for the next theme" end)
-    themeBtn:SetPoint("RIGHT", closeBtn, "LEFT", -4, 0)
 
     local footLine = f:CreateTexture(nil, "ARTWORK")
     footLine:SetHeight(1)

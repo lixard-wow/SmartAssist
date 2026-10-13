@@ -22,6 +22,8 @@ local function ResolveSpell(id)
 end
 
 local SPELL            = ResolveSpell(SPELL_ID)
+local pendingMacro     = false
+local wizardPending    = false
 local ICON_UNAVAILABLE = 134400
 
 ns.GetSpellName     = function() return SPELL.name   end
@@ -39,13 +41,13 @@ ns.Notify = Notify
 
 local function ReadableName(unit)
     local name = GetUnitName(unit, true)
-    if not name or (issecretvalue and issecretvalue(name)) then return nil end
+    if not name or issecretvalue(name) then return nil end
     return name
 end
 
 local function UnitLabel(label, unit)
     local name = UnitExists(unit) and UnitName(unit)
-    if not name or (issecretvalue and issecretvalue(name)) then return label end
+    if not name or issecretvalue(name) then return label end
     return label .. ": " .. name
 end
 
@@ -164,7 +166,7 @@ end
 
 local function WriteMacro()
     if InCombatLockdown() then
-        ns.pendingMacro = true
+        pendingMacro = true
         return
     end
 
@@ -207,7 +209,7 @@ local function SetMacroLocation(perChar)
     end
     local old = FindMacro(name, not perChar)
     if old ~= 0 then DeleteMacro(old) end
-    if ns.RefreshConfigDisplay then ns.RefreshConfigDisplay() end
+    ns.RefreshConfigDisplay()
 end
 
 ns.SetMacroLocation = SetMacroLocation
@@ -217,7 +219,7 @@ local function SetTarget(unitOrName)
     WriteMacro()
     if ns.tooltip              then ns.tooltip:Hide()         end
     if ns.RefreshTooltipText   then ns.RefreshTooltipText()   end
-    if ns.RefreshConfigDisplay then ns.RefreshConfigDisplay() end
+    ns.RefreshConfigDisplay()
 end
 
 local function ClearTarget()
@@ -356,7 +358,7 @@ evtFrame:SetScript("OnEvent", function(self, event, arg1)
         inGroup = (GetNumGroupMembers() > 0) or (UnitInRaid("player") ~= nil)
         if CLASS == "HUNTER" and UnitExists("pet") then UpdatePetName() end
 
-        if ns.InitTooltip then ns.InitTooltip() end
+        ns.InitTooltip()
         if ns.InitConfig  then ns.InitConfig()  end
 
         self:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -383,8 +385,8 @@ evtFrame:SetScript("OnEvent", function(self, event, arg1)
             wizardQueued = true
             C_Timer.After(3, function()
                 if InCombatLockdown() then
-                    ns.wizardPending = true
-                elseif ns.ShowWizard then
+                    wizardPending = true
+                else
                     ns.ShowWizard()
                 end
             end)
@@ -396,18 +398,18 @@ evtFrame:SetScript("OnEvent", function(self, event, arg1)
             UpdatePetName()
             if SmartAssistDB.target == "pet" then WriteMacro() end
         end
-        if ns.RefreshTooltipText then ns.RefreshTooltipText() end
+        ns.RefreshTooltipText()
 
     elseif event == "PLAYER_TARGET_CHANGED" then
         if SmartAssistDB.target == "target" then
             if not InCombatLockdown() then WriteMacro() end
-            if ns.RefreshTooltipText then ns.RefreshTooltipText() end
+            ns.RefreshTooltipText()
         end
 
     elseif event == "PLAYER_FOCUS_CHANGED" then
         if SmartAssistDB.target == "focus" then
             if not InCombatLockdown() then WriteMacro() end
-            if ns.RefreshTooltipText then ns.RefreshTooltipText() end
+            ns.RefreshTooltipText()
         end
 
     elseif event == "GROUP_ROSTER_UPDATE" then
@@ -418,19 +420,19 @@ evtFrame:SetScript("OnEvent", function(self, event, arg1)
         if ns.tooltip then ns.tooltip:Hide() end
 
     elseif event == "PLAYER_REGEN_ENABLED" then
-        if ns.pendingMacro then
-            ns.pendingMacro = false
+        if pendingMacro then
+            pendingMacro = false
             WriteMacro()
         end
-        if ns.wizardPending then
-            ns.wizardPending = false
-            if ns.ShowWizard then ns.ShowWizard() end
+        if wizardPending then
+            wizardPending = false
+            ns.ShowWizard()
         end
 
     elseif event == "PLAYER_TALENT_UPDATE" or event == "SPELLS_CHANGED" then
         if not InCombatLockdown() then
             WriteMacro()
-            if ns.RefreshTooltipText then ns.RefreshTooltipText() end
+            ns.RefreshTooltipText()
         end
     end
 end)
@@ -440,11 +442,11 @@ SlashCmdList["SMARTASSIST"] = function(msg)
     msg = (msg or ""):lower():match("^%s*(.-)%s*$")
     if msg == "setup" or msg == "guide" then
         if InCombatLockdown() then
-            ns.wizardPending = true
-        elseif ns.ShowWizard then
+            wizardPending = true
+        else
             ns.ShowWizard()
         end
         return
     end
-    if ns.ToggleConfig then ns.ToggleConfig() end
+    ns.ToggleConfig()
 end
