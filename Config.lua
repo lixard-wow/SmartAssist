@@ -6,7 +6,48 @@ local configFrame
 local macroNameBox
 local targetDisplay
 local locationDisplay
+local dragButton
 local toggles = {}
+
+function ns.CreateMacroDragButton(parent, size)
+    local b = CreateFrame("Button", nil, parent)
+    b:SetSize(size, size)
+    b:RegisterForDrag("LeftButton")
+    b:RegisterForClicks("LeftButtonUp")
+    Theme.Box(b, "well", "accent", "buttonRadius")
+    local ico = b:CreateTexture(nil, "ARTWORK")
+    ico:SetPoint("TOPLEFT", 3, -3)
+    ico:SetPoint("BOTTOMRIGHT", -3, 3)
+    ico:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    local hl = b:CreateTexture(nil, "HIGHLIGHT")
+    hl:SetAllPoints(ico)
+    hl:SetColorTexture(1, 1, 1, 0.15)
+
+    local function Pick()
+        if InCombatLockdown() then return end
+        local idx = ns.FindMacro(ns.GetMacroName(), SmartAssistDB.perCharacter)
+        if idx == 0 then
+            ns.WriteMacro()
+            idx = ns.FindMacro(ns.GetMacroName(), SmartAssistDB.perCharacter)
+        end
+        if idx ~= 0 then PickupMacro(idx) end
+    end
+    b:SetScript("OnDragStart", Pick)
+    b:SetScript("OnClick", Pick)
+    b:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(ns.GetMacroName(), 1, 1, 1)
+        GameTooltip:AddLine("Drag onto an action bar slot.", nil, nil, nil, true)
+        GameTooltip:Show()
+    end)
+    b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    function b.Refresh()
+        ico:SetTexture(ns.IsSpellAvailable() and ns.GetSpellIconID() or 134400)
+    end
+    b.Refresh()
+    return b
+end
 
 function ns.SetMinimapShown(v)
     SmartAssistDB.minimap.hide = not v
@@ -58,23 +99,7 @@ local function CreateToggle(parent, labelText, getter, setter)
 end
 
 local function TextButton(parent, text, width, onClick)
-    local b = CreateFrame("Button", nil, parent)
-    b:SetSize(width, FIELD_H)
-    local fill, edge = Theme.Box(b, "button", "buttonBorder", "buttonRadius")
-    local lbl = Theme.Text(b, "button", 12, "buttonText")
-    lbl:SetPoint("CENTER")
-    lbl:SetJustifyH("CENTER")
-    lbl:SetText(text)
-    b:SetScript("OnClick", onClick)
-    b:SetScript("OnEnter", function()
-        Theme.Tint(fill, Theme.C.buttonHover)
-        Theme.Tint(edge, Theme.C.accent)
-    end)
-    b:SetScript("OnLeave", function()
-        Theme.Tint(fill, Theme.C.button)
-        Theme.Tint(edge, Theme.C.buttonBorder)
-    end)
-    return b
+    return Theme.TextButton(parent, text, width, FIELD_H, onClick)
 end
 
 local function BuildConfigFrame()
@@ -198,11 +223,22 @@ local function BuildConfigFrame()
 
     local switchBtn = TextButton(f, "Switch", 60, function()
         ns.SetMacroLocation(not SmartAssistDB.perCharacter)
-        ns.RefreshConfigDisplay()
     end)
     switchBtn:SetPoint("RIGHT", f, "TOPRIGHT", -PAD, y - FIELD_H / 2)
 
-    y = y - FIELD_H - 14
+    y = y - FIELD_H - 10
+
+    dragButton = ns.CreateMacroDragButton(f, 36)
+    dragButton:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y)
+
+    local dragTitle = Theme.Text(f, "strong", 12, "text")
+    dragTitle:SetPoint("TOPLEFT", dragButton, "TOPRIGHT", 10, -3)
+    dragTitle:SetText("Drag onto your action bar")
+    local dragSub = Theme.Text(f, "body", 11, "muted")
+    dragSub:SetPoint("TOPLEFT", dragTitle, "BOTTOMLEFT", 0, -3)
+    dragSub:SetText("Or click it, then click a bar slot.")
+
+    y = y - 36 - 14
 
     if ns.class ~= "PRIEST" then
         AddSection(f, "AUTOMATION", y)
@@ -274,6 +310,8 @@ function ns.RefreshConfigDisplay()
     if locationDisplay then
         locationDisplay:SetText(ns.MacroTabName())
     end
+
+    if dragButton then dragButton.Refresh() end
 
     if configFrame.icon and ns.GetSpellIconID then
         configFrame.icon:SetTexture(ns.GetSpellIconID())

@@ -40,24 +40,7 @@ local function Label(page, prev, gap, text)
 end
 
 local function TextButton(parent, text, width, onClick)
-    local b = CreateFrame("Button", nil, parent)
-    b:SetSize(width, FIELD_H)
-    local fill, edge = Theme.Box(b, "button", "buttonBorder", "buttonRadius")
-    local lbl = Theme.Text(b, "button", 12, "buttonText")
-    lbl:SetPoint("CENTER")
-    lbl:SetJustifyH("CENTER")
-    lbl:SetText(text)
-    b.label = lbl
-    b:SetScript("OnClick", onClick)
-    b:SetScript("OnEnter", function()
-        Theme.Tint(fill, Theme.C.buttonHover)
-        Theme.Tint(edge, Theme.C.accent)
-    end)
-    b:SetScript("OnLeave", function()
-        Theme.Tint(fill, Theme.C.button)
-        Theme.Tint(edge, Theme.C.buttonBorder)
-    end)
-    return b
+    return Theme.TextButton(parent, text, width, FIELD_H, onClick)
 end
 
 local function Choice(page, prev, gap, label, desc, isOn, onPick)
@@ -74,7 +57,6 @@ local function Choice(page, prev, gap, label, desc, isOn, onPick)
     local lbl = Theme.Text(row, "strong", 12, "text")
     lbl:SetPoint("TOPLEFT", cb, "TOPRIGHT", 10, 0)
     lbl:SetText(label)
-    row.label = lbl
 
     local d
     if desc then
@@ -101,7 +83,7 @@ local function Radio(page, prev, gap, label, desc, getter, value, setter)
 end
 
 local function Toggle(page, prev, gap, label, desc, getter, setter)
-    return Choice(page, prev, gap, label, desc, getter, function(v) setter(v) end)
+    return Choice(page, prev, gap, label, desc, getter, setter)
 end
 
 local function NewPage()
@@ -113,17 +95,13 @@ local function NewPage()
     return p
 end
 
-local function Spell()
-    return ns.GetSpellName()
-end
-
 local function PlayerName()
     return UnitName("player") or "this character"
 end
 
 local function BuildWelcome()
     local p = NewPage()
-    local spell = Spell()
+    local spell = ns.GetSpellName()
     local h = Heading(p, nil, 0, "Welcome to SmartAssist")
 
     local who
@@ -155,11 +133,10 @@ end
 
 local function BuildBehaviour()
     local p = NewPage()
-    local db = function() return SmartAssistDB end
-    local getTarget = function() return db().target end
+    local getTarget = function() return SmartAssistDB.target end
 
     local h = Heading(p, nil, 0, "How should it behave?")
-    local l = Label(p, h, 14, "AIM " .. Spell():upper() .. " AT")
+    local l = Label(p, h, 14, "AIM " .. ns.GetSpellName():upper() .. " AT")
 
     local last
     if ns.class == "HUNTER" then
@@ -230,18 +207,18 @@ local function BuildBehaviour()
     if ns.class ~= "PRIEST" then
         last = Toggle(p, last, 8, "Find the tank when I join a group",
             "Aims the macro at the group's tank as soon as you join.",
-            function() return db().autotank end,
-            function(v) db().autotank = v end)
+            function() return SmartAssistDB.autotank end,
+            function(v) SmartAssistDB.autotank = v end)
         if ns.class == "HUNTER" then
             last = Toggle(p, last, 4, "Switch back to my pet when I leave",
                 "Aims the macro at your pet again once the group ends.",
-                function() return db().autopet end,
-                function(v) db().autopet = v end)
+                function() return SmartAssistDB.autopet end,
+                function(v) SmartAssistDB.autopet = v end)
         end
     end
     Toggle(p, last, 4, "Show the minimap button",
         "Hover it for the quick menu, right-click it for settings. Without it, type /smartassist.",
-        function() return not db().minimap.hide end,
+        function() return not SmartAssistDB.minimap.hide end,
         ns.SetMinimapShown)
 end
 
@@ -283,37 +260,8 @@ local function BuildBar()
     local p = NewPage()
     local h = Heading(p, nil, 0, "Put it on your action bar")
 
-    local drag = CreateFrame("Button", nil, p)
-    drag:SetSize(44, 44)
+    local drag = ns.CreateMacroDragButton(p, 44)
     drag:SetPoint("TOPLEFT", h, "BOTTOMLEFT", 0, -14)
-    drag:RegisterForDrag("LeftButton")
-    drag:RegisterForClicks("LeftButtonUp")
-    Theme.Box(drag, "well", "accent", "buttonRadius")
-    local ico = drag:CreateTexture(nil, "ARTWORK")
-    ico:SetPoint("TOPLEFT", 3, -3)
-    ico:SetPoint("BOTTOMRIGHT", -3, 3)
-    ico:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    local hl = drag:CreateTexture(nil, "HIGHLIGHT")
-    hl:SetAllPoints(ico)
-    hl:SetColorTexture(1, 1, 1, 0.15)
-    local function Pick()
-        if InCombatLockdown() then return end
-        local idx = ns.FindMacro(ns.GetMacroName(), SmartAssistDB.perCharacter)
-        if idx == 0 then
-            ns.WriteMacro()
-            idx = ns.FindMacro(ns.GetMacroName(), SmartAssistDB.perCharacter)
-        end
-        if idx ~= 0 then PickupMacro(idx) end
-    end
-    drag:SetScript("OnDragStart", Pick)
-    drag:SetScript("OnClick", Pick)
-    drag:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText(ns.GetMacroName(), 1, 1, 1)
-        GameTooltip:AddLine("Drag onto an action bar slot.", nil, nil, nil, true)
-        GameTooltip:Show()
-    end)
-    drag:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
     local dragTitle = Theme.Text(p, "strong", 13, "text")
     dragTitle:SetPoint("TOPLEFT", drag, "TOPRIGHT", 12, -4)
@@ -334,7 +282,7 @@ local function BuildBar()
         local accent = Theme.Code("accent")
         s2:SetText("2.  Click the " .. accent .. ns.MacroTabName() .. "|r tab at the top.")
         s3:SetText("3.  Drag " .. accent .. ns.GetMacroName() .. "|r onto your action bar.")
-        ico:SetTexture(ns.IsSpellAvailable() and ns.GetSpellIconID() or 134400)
+        drag.Refresh()
     end
 
     local open = TextButton(p, "Open Macros", 120, function()
@@ -366,7 +314,7 @@ local function BuildBar()
         if ns.IsSpellAvailable() then
             warn:SetText("")
         else
-            warn:SetText("You haven't learned " .. Spell() .. " yet. The button shows a question mark until you take the talent, then it works on its own.")
+            warn:SetText("You haven't learned " .. ns.GetSpellName() .. " yet. The button shows a question mark until you take the talent, then it works on its own.")
         end
     end
 end
@@ -374,7 +322,7 @@ end
 local function BuildDone()
     local p = NewPage()
     local h = Heading(p, nil, 0, "You're all set")
-    local a = Paragraph(p, h, 12, "Press your new button and " .. Spell() .. " goes where you aimed it.")
+    local a = Paragraph(p, h, 12, "Press your new button and " .. ns.GetSpellName() .. " goes where you aimed it.")
 
     local l = Label(p, a, 16, "CHANGING WHO IT'S AIMED AT")
     local b1 = Paragraph(p, l, 8, "-  Hover the minimap button for the quick menu. The name at the bottom shows who the macro is aimed at right now.")

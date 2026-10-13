@@ -263,6 +263,27 @@ function Theme.IconButton(parent, icon, size, onClick, tooltip)
     return b
 end
 
+function Theme.TextButton(parent, text, width, height, onClick)
+    local b = CreateFrame("Button", nil, parent)
+    b:SetSize(width, height)
+    local fill, edge = Theme.Box(b, "button", "buttonBorder", "buttonRadius")
+    local lbl = Theme.Text(b, "button", 12, "buttonText")
+    lbl:SetPoint("CENTER")
+    lbl:SetJustifyH("CENTER")
+    lbl:SetText(text)
+    b.label = lbl
+    b:SetScript("OnClick", onClick)
+    b:SetScript("OnEnter", function()
+        Tint(fill, Theme.C.buttonHover)
+        Tint(edge, Theme.C.accent)
+    end)
+    b:SetScript("OnLeave", function()
+        Tint(fill, Theme.C.button)
+        Tint(edge, Theme.C.buttonBorder)
+    end)
+    return b
+end
+
 function Theme.Check(parent, size, onClick)
     local b = CreateFrame("Button", nil, parent)
     b:SetSize(size, size)

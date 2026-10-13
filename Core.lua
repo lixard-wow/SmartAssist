@@ -31,6 +31,18 @@ ns.IsSpellAvailable = function()
     return C_SpellBook.IsSpellKnown(SPELL_ID)
 end
 
+local function Notify(msg)
+    print(ns.Theme.Code("accent") .. "SmartAssist|r: " .. msg)
+end
+
+ns.Notify = Notify
+
+local function ReadableName(unit)
+    local name = GetUnitName(unit, true)
+    if not name or (issecretvalue and issecretvalue(name)) then return nil end
+    return name
+end
+
 local function UnitLabel(label, unit)
     local name = UnitExists(unit) and UnitName(unit)
     if not name or (issecretvalue and issecretvalue(name)) then return label end
@@ -75,8 +87,6 @@ local function UpdatePetName()
         SmartAssistDB.petname = name
     end
 end
-
-ns.UpdatePetName = UpdatePetName
 
 local function BuildMacroText()
     local db        = SmartAssistDB
@@ -165,10 +175,9 @@ local function WriteMacro()
     local idx     = FindMacro(name, perChar)
 
     if idx == 0 then
-        local result = CreateMacro(name, icon, body, perChar)
-        if not result then
-            print(ns.Theme.Code("accent") .. "SmartAssist|r: Could not create macro \"" .. name .. "\" because "
-                .. ns.MacroTabName(perChar) .. " is full (" .. (perChar and CHAR_MAX or ACCOUNT_MAX) .. " max).")
+        if not CreateMacro(name, icon, body, perChar) then
+            Notify("Could not create macro \"" .. name .. "\" because " .. ns.MacroTabName(perChar)
+                .. " is full (" .. (perChar and CHAR_MAX or ACCOUNT_MAX) .. " max).")
         end
     else
         EditMacro(idx, name, icon, body)
@@ -184,22 +193,21 @@ end
 
 local function SetMacroLocation(perChar)
     perChar = perChar and true or false
-    if (SmartAssistDB.perCharacter and true or false) == perChar then return true end
+    if (SmartAssistDB.perCharacter and true or false) == perChar then return end
     if InCombatLockdown() then
-        print(ns.Theme.Code("accent") .. "SmartAssist|r: You can't move the macro during combat.")
-        return false
+        Notify("You can't move the macro during combat.")
+        return
     end
     local name = GetMacroName()
     SmartAssistDB.perCharacter = perChar
     WriteMacro()
     if FindMacro(name, perChar) == 0 then
         SmartAssistDB.perCharacter = not perChar
-        return false
+        return
     end
     local old = FindMacro(name, not perChar)
     if old ~= 0 then DeleteMacro(old) end
     if ns.RefreshConfigDisplay then ns.RefreshConfigDisplay() end
-    return true
 end
 
 ns.SetMacroLocation = SetMacroLocation
@@ -229,7 +237,7 @@ local function FindTank()
 
     for i = 1, count do
         local unit = prefix .. i
-        local name = UnitName(unit)
+        local name = ReadableName(unit)
         if name and UnitIsConnected(unit) then
             if GetPartyAssignment("MAINTANK", unit) then
                 return name
@@ -257,12 +265,6 @@ end
 
 ns.FindTank = FindTank
 
-local function ReadableName(unit)
-    local name = GetUnitName(unit, true)
-    if not name or (issecretvalue and issecretvalue(name)) then return nil end
-    return name
-end
-
 ns.GetGroupDamagers = function()
     local list = {}
     if IsInRaid() then return list end
@@ -281,10 +283,6 @@ ns.IsNamedTarget = function(t)
     return t ~= "" and t ~= "pet" and t ~= "target" and t ~= "targettarget" and t ~= "focus"
 end
 
-local function Notify(msg)
-    print(ns.Theme.Code("accent") .. "SmartAssist|r: " .. msg)
-end
-
 ns.SaveTargetName = function()
     local name = UnitIsPlayer("target") and ReadableName("target")
     if name then
@@ -294,8 +292,6 @@ ns.SaveTargetName = function()
     end
     Notify("Target a player first")
 end
-
-ns.Notify = Notify
 
 local function ApplyAutoTank()
     local tank = FindTank()
@@ -317,6 +313,7 @@ local inGroup           = false
 local waitAccum         = 0
 local WAIT_SEC          = 1.5
 local pendingZonePrompt = false
+local wizardQueued      = false
 
 local waitFrame = CreateFrame("Frame")
 waitFrame:Hide()
@@ -328,12 +325,10 @@ waitFrame:SetScript("OnUpdate", function(self, elapsed)
 
     local nowIn = (GetNumGroupMembers() > 0) or (UnitInRaid("player") ~= nil)
 
-    if nowIn and not inGroup then
+    if nowIn then
         inGroup = true
         if SmartAssistDB.autotank then ApplyAutoTank() end
-    elseif nowIn and inGroup then
-        if SmartAssistDB.autotank then ApplyAutoTank() end
-    elseif not nowIn and inGroup then
+    elseif inGroup then
         inGroup = false
         if SmartAssistDB.autopet then ApplyAutoPet() end
     end
@@ -384,8 +379,8 @@ evtFrame:SetScript("OnEvent", function(self, event, arg1)
         end
         ResolveMacroLocation()
         WriteMacro()
-        if not SmartAssistDB.wizardDone and not ns.wizardQueued then
-            ns.wizardQueued = true
+        if not SmartAssistDB.wizardDone and not wizardQueued then
+            wizardQueued = true
             C_Timer.After(3, function()
                 if InCombatLockdown() then
                     ns.wizardPending = true
@@ -443,11 +438,6 @@ end)
 SLASH_SMARTASSIST1 = "/smartassist"
 SlashCmdList["SMARTASSIST"] = function(msg)
     msg = (msg or ""):lower():match("^%s*(.-)%s*$")
-    if msg == "resetguide" then
-        SmartAssistDB.wizardDone = nil
-        Notify("The setup guide will show again after you /reload.")
-        return
-    end
     if msg == "setup" or msg == "guide" then
         if InCombatLockdown() then
             ns.wizardPending = true

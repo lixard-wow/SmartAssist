@@ -13,8 +13,6 @@ local ACCENT_W = 3
 local INSET    = 8
 local GAP      = 6
 
-local function GetTargetLabel() return ns.GetTargetLabel() end
-
 local popup
 local isPrompt      = false
 local hideCancelled = false
@@ -182,10 +180,6 @@ local function Anchor(anchorFrame)
     end
 end
 
-local function Notify(msg)
-    print(Theme.Code("accent") .. "SmartAssist|r: " .. msg)
-end
-
 local function ShowPopup(anchorFrame)
     if InCombatLockdown() then return end
     if not popup then popup = BuildPopup() end
@@ -208,9 +202,9 @@ local function ShowPopup(anchorFrame)
                 local tank = ns.FindTank and ns.FindTank()
                 if tank then
                     ns.SetTarget(tank)
-                    Notify("Target set to " .. tank)
+                    ns.Notify("Target set to " .. tank)
                 else
-                    Notify("No tank found in group")
+                    ns.Notify("No tank found in group")
                 end
             end,
         })
@@ -222,7 +216,7 @@ local function ShowPopup(anchorFrame)
                 label = "Set to " .. name,
                 fn    = function()
                     ns.SetTarget(name)
-                    Notify("Target set to " .. name)
+                    ns.Notify("Target set to " .. name)
                 end,
             })
         end
@@ -300,7 +294,7 @@ local function ShowPopup(anchorFrame)
     end
 
     popup:SetHeight(-rowY + GAP + 1 + FOOTER_H)
-    statusLbl:SetText(GetTargetLabel())
+    statusLbl:SetText(ns.GetTargetLabel())
 
     Anchor(anchorFrame)
     popup:Show()
@@ -309,10 +303,10 @@ end
 
 function ns.RefreshTooltipText()
     if ns.dataObj then
-        ns.dataObj.text = GetTargetLabel()
+        ns.dataObj.text = ns.GetTargetLabel()
     end
     if statusLbl then
-        statusLbl:SetText(GetTargetLabel())
+        statusLbl:SetText(ns.GetTargetLabel())
     end
 end
 
@@ -332,7 +326,7 @@ function ns.InitTooltip()
 
     ns.dataObj = LDB:NewDataObject("SmartAssist", {
         type    = "data source",
-        text    = GetTargetLabel(),
+        text    = ns.GetTargetLabel(),
         icon    = iconPath,
         OnClick = function(_, btn)
             if btn == "RightButton" then
