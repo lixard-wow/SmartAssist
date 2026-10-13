@@ -121,7 +121,7 @@ local function BuildPopup()
     closeBtn:HookScript("OnEnter", CancelHide)
     closeBtn:HookScript("OnLeave", ScheduleHide)
 
-    local themeBtn = Theme.IconButton(f, "icon_sliders", btnSize, function() Theme.Next() end,
+    local themeBtn = Theme.IconButton(f, "settings", btnSize, function() Theme.Next() end,
         function() return "Theme: " .. Theme.T.name .. "\nClick for the next theme" end)
     themeBtn:SetPoint("RIGHT", closeBtn, "LEFT", -4, 0)
     themeBtn:HookScript("OnEnter", CancelHide)

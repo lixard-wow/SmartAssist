@@ -394,7 +394,7 @@ local function BuildWizard()
     local closeBtn = Theme.IconButton(f, "icon_close", btnSize, function() f:Hide() end, "Close")
     closeBtn:SetPoint("RIGHT", f, "TOPRIGHT", -10, -HEADER_H / 2)
 
-    local themeBtn = Theme.IconButton(f, "icon_sliders", btnSize, function() Theme.Next() end,
+    local themeBtn = Theme.IconButton(f, "settings", btnSize, function() Theme.Next() end,
         function() return "Theme: " .. Theme.T.name .. "\nClick for the next theme" end)
     themeBtn:SetPoint("RIGHT", closeBtn, "LEFT", -4, 0)
 
