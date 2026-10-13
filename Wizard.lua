@@ -337,7 +337,7 @@ local function BuildDone()
 
     local l2 = Label(p, b3, 16, "GOOD TO KNOW")
     local c1 = Paragraph(p, l2, 8, "-  The macro can't change during combat. Anything you pick mid-fight is applied as soon as combat ends.")
-    local c2 = Paragraph(p, c1, 6, "-  Click the sliders button at the top of any SmartAssist window to change its look.")
+    local c2 = Paragraph(p, c1, 6, "-  Click the gear button at the top of any SmartAssist window to change its look.")
     Paragraph(p, c2, 6, "-  Type /smartassist setup to see this guide again.")
 end
 
@@ -394,7 +394,7 @@ local function BuildWizard()
     local closeBtn = Theme.IconButton(f, "icon_close", btnSize, function() f:Hide() end, "Close")
     closeBtn:SetPoint("RIGHT", f, "TOPRIGHT", -10, -HEADER_H / 2)
 
-    local themeBtn = Theme.IconButton(f, "settings", btnSize, function() Theme.Next() end,
+    local themeBtn = Theme.IconButton(f, "icon_gear", btnSize, function() Theme.Next() end,
         function() return "Theme: " .. Theme.T.name .. "\nClick for the next theme" end)
     themeBtn:SetPoint("RIGHT", closeBtn, "LEFT", -4, 0)
 

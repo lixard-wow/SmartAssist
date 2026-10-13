@@ -12,6 +12,7 @@
 ### Changed
 
 - Updated for patch 12.1.5.
+- The button that changes the look is now a gear.
 - New Priests no longer start aimed at focus. Pick a player by name instead.
 - New characters now save the macro in their own character tab. If you already have the macro in General Macros, it stays there so your action bar button keeps working.
 

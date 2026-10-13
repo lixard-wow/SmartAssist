@@ -37,7 +37,7 @@ Theme.THEMES = {
         name = "Artisan Ledger",
         fonts = { body = SOURCE, strong = SOURCE_BOLD, heading = CINZEL, title = CINZEL, button = SOURCE_BOLD },
         titleSize = 14, headingSize = 12, windowRadius = 4, buttonRadius = 4,
-        innerFrame = true, settingsIcon = "icon_gear",
+        innerFrame = true,
         colors = {
             window = Hex("#1c1611"), header = Hex("#1c1611"), field = Hex("#120e0b"), well = Hex("#120e0b"),
             hover = Hex("#2e241b"), border = Hex("#5a4630"), line = Hex("#3a2e22"),
@@ -51,7 +51,7 @@ Theme.THEMES = {
         name = "Lixard Classic",
         fonts = { body = SOURCE, strong = SOURCE_BOLD, heading = SOURCE_BOLD, title = SOURCE_BOLD, button = SOURCE },
         titleSize = 15, headingSize = 13, windowRadius = 0, buttonRadius = 0,
-        classAccent = true, settingsIcon = "icon_gear",
+        classAccent = true,
         colors = {
             window = { 0.06, 0.06, 0.06, 1 }, header = { 0.06, 0.06, 0.06, 1 }, field = Hex("#101010"), well = Hex("#0b0b0b"),
             hover = Hex("#1f1f1f"), border = { 0.22, 0.22, 0.22, 1 }, line = { 0.29, 0.29, 0.29, 1 },
@@ -241,12 +241,10 @@ function Theme.IconButton(parent, icon, size, onClick, tooltip)
     b:SetSize(size, size)
     local fill = Theme.Box(b, "button", "buttonBorder", "buttonRadius")
     local tex = b:CreateTexture(nil, "ARTWORK")
+    tex:SetTexture(ART .. icon)
     tex:SetSize(math.floor(size * 0.5 + 0.5), math.floor(size * 0.5 + 0.5))
     tex:SetPoint("CENTER")
-    Theme.Skin(function(T, C)
-        tex:SetTexture(ART .. (icon == "settings" and (T.settingsIcon or "icon_sliders") or icon))
-        Tint(tex, C.icon)
-    end)
+    Theme.Skin(function(_, C) Tint(tex, C.icon) end)
     b:SetScript("OnClick", onClick)
     b:SetScript("OnEnter", function(self)
         Tint(tex, Theme.C.iconHover)
