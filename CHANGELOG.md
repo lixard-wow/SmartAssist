@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### New
+
+- **Two new looks: Horde and Alliance.** Horde is blood red and bronze on dark ember, Alliance is royal blue and gold on deep navy. Click the gear button to switch.
+
 ## Version 2.1.0
 
 ### New
